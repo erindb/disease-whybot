@@ -156,16 +156,16 @@ function make_slides(f) {
               query_type: "numeric"
             },
             // Bob has D and he A. How much does it help that he A?
+            // 1000 people have D and they A. How many will get better?
             {
-              before: ("Bob has " + _s.variables.D +
-                " and he " + _s.variables.A +
-                ". How much does it help that he " +
-                _s.variables.A + "? "),
+              before: ("1000 people have " + _s.variables.D +
+                " and they " + _s.variables.A +
+                ". How many will get better? "),
               after: "",
               trial_level: "details",
               variable: "mitigateAD",
               variable_type: "action->disease",
-              query_type: "qualitative"
+              query_type: "numeric"
             },
             // Bob has D. He should A. How difficult is it for him to do that?
             {
