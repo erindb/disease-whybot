@@ -98,8 +98,8 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: "Bob has " + _s.variables.D + " because he ",
-              after: ".",
+              before: "Bob ",
+              after: ", which is why he has " + _s.variables.D + ".",
               trial_level: "causes",
               variable: "C",
               variable_type: "cause",
@@ -120,11 +120,11 @@ function make_slides(f) {
            _s.present = _.shuffle([
             // Bob should A, but he doesn’t A, because he R.
             {
+            // It would help if Bob A. If he does not do that, it’s probably because he R.
               before: (
                 "Bob has " + _s.variables.D +
-                ", so he should " + _s.variables.A +
-                ". But he doesn't " + _s.variables.A + 
-                ", because he "),
+                ". It would help if he " + _s.variables.A +
+                ". If he does not do that, it's probably because he "),
               after: ".",
               trial_level: "details",
               variable: "R",
