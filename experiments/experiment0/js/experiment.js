@@ -74,7 +74,7 @@ function make_slides(f) {
       // TO DO: check that response parses?
       if (response.length > 0) {
         $("#response").val("");
-        _s.variables[this.stim.variable] = response;
+        _s.variables[this.stim.variable] = response.toLowerCase();
         exp.data_trials.push({
           response: response,
           variable: this.stim.variable,
@@ -106,8 +106,8 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: "Bob has " + _s.variables.D + " and so he should ",
-              after: ".",
+              before: "Bob has " + _s.variables.D + ". If he ",
+              after: " then he might get better.",
               trial_level: "causes",
               variable: "A",
               variable_type: "action",
