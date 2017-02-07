@@ -1,0 +1,46 @@
+button {
+	margin: 10px;
+}
+
+.evidence{
+	font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+    font-size: 20px;
+}
+
+.query{
+	font-family:"Palatino Linotype", "Book Antiqua", Palatino, serif;
+    font-size: 20px;
+}
+
+.err{
+	color: red;
+}
+
+.slide {
+	width: 800px;
+	height: 600px;
+	border: solid black 1px;
+	position: relative;
+}
+
+.progress {
+	top: 570px;
+	right: 450px;
+}
+
+.prompt {
+	padding-top: 100px;
+}
+
+.query {
+	padding-top: 50px;
+}
+
+.long_form > p {
+	padding: 0 0 0 0;
+	margin: 0 0 0 0;
+}
+
+#subj_info > .long_form > .radio-inline > label {
+	padding: 0em 0em;
+}
