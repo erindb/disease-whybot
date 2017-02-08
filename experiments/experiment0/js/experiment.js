@@ -196,7 +196,7 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: ("Suppose 1000 do not people have " + _s.variables.D +
+              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D +
                 ". How many of them will " + _s.variables.Sf +
                 " frequently?"),
               after: "",
@@ -206,7 +206,7 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: ("Suppose 1000 people do not have " + _s.variables.D +
+              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D +
                 ". How many of them will " + _s.variables.So +
                 " occasionally?"),
               after: "",
@@ -216,7 +216,7 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: ("Suppose 1000 people do not have " + _s.variables.D +
+              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D +
                 ". How many of them will " + _s.variables.Ss +
                 " soon?"),
               after: "",
@@ -226,7 +226,7 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: ("Suppose 1000 people do not have " + _s.variables.D +
+              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D +
                 ". How many of them will " + _s.variables.Se +
                 " eventually?"),
               after: "",
