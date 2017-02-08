@@ -91,10 +91,34 @@ function make_slides(f) {
           _s.present = _.shuffle([
             {
               before: "Bob has " + _s.variables.D + " and this causes him to ",
+              after: " frequently.",
+              trial_level: "causes",
+              variable: "Sf",
+              variable_type: "frequenty symptom",
+              query_type: "text"
+            },
+            {
+              before: "Bob has " + _s.variables.D + " and this causes him to ",
+              after: " occasionally.",
+              trial_level: "causes",
+              variable: "So",
+              variable_type: "occasional symptom",
+              query_type: "text"
+            },
+            {
+              before: "Bob has " + _s.variables.D + " and soon this will cause him to ",
               after: ".",
               trial_level: "causes",
-              variable: "S",
-              variable_type: "symptom",
+              variable: "Ss",
+              variable_type: "soon symptom",
+              query_type: "text"
+            },
+            {
+              before: "Bob has " + _s.variables.D + " and eventually this will cause him to ",
+              after: ".",
+              trial_level: "causes",
+              variable: "Se",
+              variable_type: "eventual symptom",
               query_type: "text"
             },
             {
@@ -131,18 +155,87 @@ function make_slides(f) {
               variable_type: "reason",
               query_type: "text"
             },
-            // 1000 people have D. How many will S?
             {
-              before: (
-                "1000 people have " + _s.variables.D +
-                ". How many will " + _s.variables.S + "? "
-              ),
+              before: ("1000 people have " + _s.variables.D +
+                " How many of them will " + _s.variables.Sf +
+                " frequently?"),
               after: "",
               trial_level: "details",
-              variable: "causeDS",
-              variable_type: "disease->symptom",
-              query_type: "numeric"
+              variable: "causeDSf",
+              variable_type: "disease->frequent symptom",
+              query_type: "text"
             },
+            {
+              before: ("1000 people have " + _s.variables.D +
+                " How many of them will " + _s.variables.So +
+                " occasionally?"),
+              after: "",
+              trial_level: "details",
+              variable: "causeDSo",
+              variable_type: "disease->occasional symptom",
+              query_type: "text"
+            },
+            {
+              before: ("1000 people have " + _s.variables.D +
+                " How many of them will " + _s.variables.Ss +
+                " soon?"),
+              after: "",
+              trial_level: "details",
+              variable: "causeDSs",
+              variable_type: "disease->soon symptom",
+              query_type: "text"
+            },
+            {
+              before: ("1000 people have " + _s.variables.D +
+                " How many of them will " + _s.variables.Se +
+                " eventually?"),
+              after: "",
+              trial_level: "details",
+              variable: "causeDSe",
+              variable_type: "disease->eventually symptom",
+              query_type: "text"
+            },
+            {
+              before: ("1000 do not people have " + _s.variables.D +
+                " How many of them will " + _s.variables.Sf +
+                " frequently?"),
+              after: "",
+              trial_level: "details",
+              variable: "bSf",
+              variable_type: "!disease->frequent symptom",
+              query_type: "text"
+            },
+            {
+              before: ("1000 people do not have " + _s.variables.D +
+                " How many of them will " + _s.variables.So +
+                " occasionally?"),
+              after: "",
+              trial_level: "details",
+              variable: "bSo",
+              variable_type: "!disease->occasional symptom",
+              query_type: "text"
+            },
+            {
+              before: ("1000 people do not have " + _s.variables.D +
+                " How many of them will " + _s.variables.Ss +
+                " soon?"),
+              after: "",
+              trial_level: "details",
+              variable: "bSs",
+              variable_type: "!disease->soon symptom",
+              query_type: "text"
+            },
+            {
+              before: ("1000 people do not have " + _s.variables.D +
+                " How many of them will " + _s.variables.Se +
+                " eventually?"),
+              after: "",
+              trial_level: "details",
+              variable: "bSe",
+              variable_type: "!disease->eventually symptom",
+              query_type: "text"
+            },
+            // 1000 people have D. How many will S?
             // 1000 people C. How many will get D?
             {
               before: (
