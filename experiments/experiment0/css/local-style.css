@@ -44,3 +44,7 @@ button {
 #subj_info > .long_form > .radio-inline > label {
 	padding: 0em 0em;
 }
+
+.escape {
+	font-size: 0.5em;
+}

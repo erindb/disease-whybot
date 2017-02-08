@@ -50,6 +50,12 @@ function make_slides(f) {
 
       $(".err").hide();
 
+      if (_s.trial_level == "disease") {
+        $(".escape").hide();
+      } else {
+        $(".escape").show();
+      }
+
       $("#before").html(stim.before);
       $("#after").html(stim.after);
     },
