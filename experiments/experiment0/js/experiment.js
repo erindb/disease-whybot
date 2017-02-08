@@ -156,8 +156,8 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: ("1000 people have " + _s.variables.D +
-                " How many of them will " + _s.variables.Sf +
+              before: ("Suppose 1000 people have " + _s.variables.D +
+                ". How many of them will " + _s.variables.Sf +
                 " frequently?"),
               after: "",
               trial_level: "details",
@@ -166,8 +166,8 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: ("1000 people have " + _s.variables.D +
-                " How many of them will " + _s.variables.So +
+              before: ("Suppose 1000 people have " + _s.variables.D +
+                ". How many of them will " + _s.variables.So +
                 " occasionally?"),
               after: "",
               trial_level: "details",
@@ -176,8 +176,8 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: ("1000 people have " + _s.variables.D +
-                " How many of them will " + _s.variables.Ss +
+              before: ("Suppose 1000 people have " + _s.variables.D +
+                ". How many of them will " + _s.variables.Ss +
                 " soon?"),
               after: "",
               trial_level: "details",
@@ -186,8 +186,8 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: ("1000 people have " + _s.variables.D +
-                " How many of them will " + _s.variables.Se +
+              before: ("Suppose 1000 people have " + _s.variables.D +
+                ". How many of them will " + _s.variables.Se +
                 " eventually?"),
               after: "",
               trial_level: "details",
@@ -196,8 +196,8 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: ("1000 do not people have " + _s.variables.D +
-                " How many of them will " + _s.variables.Sf +
+              before: ("Suppose 1000 do not people have " + _s.variables.D +
+                ". How many of them will " + _s.variables.Sf +
                 " frequently?"),
               after: "",
               trial_level: "details",
@@ -206,8 +206,8 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: ("1000 people do not have " + _s.variables.D +
-                " How many of them will " + _s.variables.So +
+              before: ("Suppose 1000 people do not have " + _s.variables.D +
+                ". How many of them will " + _s.variables.So +
                 " occasionally?"),
               after: "",
               trial_level: "details",
@@ -216,8 +216,8 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: ("1000 people do not have " + _s.variables.D +
-                " How many of them will " + _s.variables.Ss +
+              before: ("Suppose 1000 people do not have " + _s.variables.D +
+                ". How many of them will " + _s.variables.Ss +
                 " soon?"),
               after: "",
               trial_level: "details",
@@ -226,8 +226,8 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: ("1000 people do not have " + _s.variables.D +
-                " How many of them will " + _s.variables.Se +
+              before: ("Suppose 1000 people do not have " + _s.variables.D +
+                ". How many of them will " + _s.variables.Se +
                 " eventually?"),
               after: "",
               trial_level: "details",
@@ -239,7 +239,7 @@ function make_slides(f) {
             // 1000 people C. How many will get D?
             {
               before: (
-                "1000 people " + _s.variables.C +
+                "Suppose 1000 people " + _s.variables.C +
                 ". How many will get " + _s.variables.D + "? "
               ),
               after: "",
@@ -251,7 +251,7 @@ function make_slides(f) {
             // Bob has D and he A. How much does it help that he A?
             // 1000 people have D and they A. How many will get better?
             {
-              before: ("1000 people have " + _s.variables.D +
+              before: ("Suppose 1000 people have " + _s.variables.D +
                 " and they " + _s.variables.A +
                 ". How many will get better? "),
               after: "",
