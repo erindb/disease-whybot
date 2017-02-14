@@ -7,10 +7,8 @@ function get_exp_length() {
 }
 
 function resizeInput() {
-    $(this).attr('size', Math.max(
-      $(this).val().length),
-      10
-    );
+  var size = $(this).val().length;
+  $(this).attr('size', Math.max(size, 10));
 }
 
 function capitalizeFirstLetter(string) {
