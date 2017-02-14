@@ -6,6 +6,13 @@ function get_exp_length() {
   console.log("get exp length not implemented");
 }
 
+function resizeInput() {
+    $(this).attr('size', Math.max(
+      $(this).val().length),
+      10
+    );
+}
+
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
@@ -40,7 +47,7 @@ function make_slides(f) {
     present :  [
       {
         before: "",
-        after: " is a disease.",
+        after: " is an illness.",
         variable: "D",
         variable_type: "disease",
         trial_level: "disease",
@@ -63,6 +70,7 @@ function make_slides(f) {
       this.stim = stim;
 
       $(".err").hide();
+      $('input[type="text"]').attr('size', 10);
 
       if (stim.query_type=="text" || stim.query_type=="numeric") {
         $("#select-response").hide();
@@ -443,6 +451,12 @@ function init() {
       }
   })();
 */
+
+  $('input[type="text"]')
+    // event handler
+    .keyup(resizeInput)
+    // resize on page load
+    .each(resizeInput);
 
   exp.trials = [];
   exp.catch_trials = [];

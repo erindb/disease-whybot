@@ -7,6 +7,10 @@ button {
     font-size: 20px;
 }
 
+#response {
+	size: 10;
+}
+
 .query{
 	font-family:"Palatino Linotype", "Book Antiqua", Palatino, serif;
     font-size: 20px;
