@@ -44,8 +44,9 @@ function make_slides(f) {
 
     present :  [
       {
-        before: "",
-        after: " is an illness.",
+        before: ( exp.name + " has an illness. " + 
+          capitalizeFirstLetter(exp.he) + " has "),
+        after: ".",
         variable: "D",
         variable_type: "disease",
         trial_level: "disease",
@@ -54,10 +55,6 @@ function make_slides(f) {
     ],
 
     variables: {
-      name: _.sample(["Pat", "Sam", "Taylor", "Alex", "Eli"]),
-      he: "none so far",
-      him: "none so far",
-      his: "none so far"
     },
 
     trial_level : "disease",
@@ -131,56 +128,56 @@ function make_slides(f) {
           before: this.stim.before,
           after: this.stim.after,
           trial: this.stim.trial_level,
-          name: _s.variables.name,
-          he: _s.variables.he,
-          him: _s.variables.him,
-          his: _s.variables.his
+          name: exp.name,
+          he: exp.he,
+          him: exp.him,
+          his: exp.his
         });
 
         if (_s.trial_level == "disease") {
-          _s.present = [
-            {
-              before: (
-                capitalizeFirstLetter(_s.variables.D) +
-                " affects "
-              ),
-              after: ".",
-              trial_level: "causes",
-              variable: "gender",
-              options: [
-                "only men",
-                "only women",
-                "both men and women"
-              ],
-              variable_type: "frequenty symptom",
-              query_type: "dropdown"
-            }
-          ];
-          _s.trial_level = "gender";
-          return true;
-        } else if (_s.trial_level == "gender") {
-          if (_s.variables.gender == "both") {
-            _s.variables.gender = _.sample(["men", "women"]);
-          }
-          if (_s.variables.gender == "men") {
-            _s.variables.him = "him";
-            _s.variables.he = "he";
-            _s.variables.his = "his";
-          } else if (_s.variables.gender == "women") {
-            _s.variables.him = "her";
-            _s.variables.he = "she";
-            _s.variables.his = "her";
-          } else {
-            console.log("error 982374");
-          }
+        //   _s.present = [
+        //     {
+        //       before: (
+        //         capitalizeFirstLetter(_s.variables.D) +
+        //         " affects "
+        //       ),
+        //       after: ".",
+        //       trial_level: "causes",
+        //       variable: "gender",
+        //       options: [
+        //         "only men",
+        //         "only women",
+        //         "both men and women"
+        //       ],
+        //       variable_type: "frequenty symptom",
+        //       query_type: "dropdown"
+        //     }
+        //   ];
+        //   _s.trial_level = "gender";
+        //   return true;
+        // } else if (_s.trial_level == "gender") {
+        //   if (exp.gender == "both") {
+        //     exp.gender = _.sample(["men", "women"]);
+        //   }
+        //   if (exp.gender == "men") {
+        //     exp.him = "him";
+        //     exp.he = "he";
+        //     exp.his = "his";
+        //   } else if (exp.gender == "women") {
+        //     exp.him = "her";
+        //     exp.he = "she";
+        //     exp.his = "her";
+        //   } else {
+        //     console.log("error 982374");
+        //   }
           // Bob has D and this causes him to S.
           // Bob has D because he C.
           // Bob has D, so he should A.
           _s.present = _.shuffle([
             {
               before: (
-                _s.variables.name + " has " + _s.variables.D +
-                " and this causes " + _s.variables.him + " to "
+                exp.name + " has " + _s.variables.D +
+                " and this causes " + exp.him + " to "
               ),
               after: " frequently.",
               trial_level: "causes",
@@ -190,8 +187,8 @@ function make_slides(f) {
             },
             {
               before: (
-                _s.variables.name + " has " + _s.variables.D +
-                " and this causes " + _s.variables.him + " to "
+                exp.name + " has " + _s.variables.D +
+                " and this causes " + exp.him + " to "
               ),
               after: " occasionally.",
               trial_level: "causes",
@@ -201,8 +198,8 @@ function make_slides(f) {
             },
             {
               before:  (
-                _s.variables.name + " has " + _s.variables.D +
-                " and soon this will cause " + _s.variables.him +
+                exp.name + " has " + _s.variables.D +
+                " and soon this will cause " + exp.him +
                 " to "
               ),
               after: ".",
@@ -213,8 +210,8 @@ function make_slides(f) {
             },
             {
               before:  (
-                _s.variables.name + " has " + _s.variables.D +
-                " and eventually this will cause " + _s.variables.him +
+                exp.name + " has " + _s.variables.D +
+                " and eventually this will cause " + exp.him +
                 " to "
               ),
               after: ".",
@@ -224,8 +221,8 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before:  (_s.variables.name + " "),
-              after: ", which is why " + _s.variables.he +
+              before:  (exp.name + " "),
+              after: ", which is why " + exp.he +
               " has " + _s.variables.D + ".",
               trial_level: "causes",
               variable: "C",
@@ -234,11 +231,11 @@ function make_slides(f) {
             },
             {
               before:  (
-                _s.variables.name + " has " + _s.variables.D +
-                ". If " + _s.variables.he + " "
+                exp.name + " has " + _s.variables.D +
+                ". If " + exp.he + " "
               ),
               after: (
-                " then " + _s.variables.he +
+                " then " + exp.he +
                 " might get better."
               ),
               trial_level: "causes",
@@ -255,8 +252,8 @@ function make_slides(f) {
             {
             // It would help if Bob A. If he does not do that, it’s probably because he R.
               before:  (
-                _s.variables.name + " has " + _s.variables.D +
-                ". It would help if " + _s.variables.he +
+                exp.name + " has " + _s.variables.D +
+                ". It would help if " + exp.he +
                 " " + _s.variables.A +
                 ". If he does not do that, it's probably because he "
               ),
@@ -374,10 +371,10 @@ function make_slides(f) {
             // Bob has D. He should A. How difficult is it for him to do that?
             {
               before:  (
-                _s.variables.name + " has " + _s.variables.D +
-                " and so " + _s.variables.he +
+                exp.name + " has " + _s.variables.D +
+                " and so " + exp.he +
                 " should " + _s.variables.A +
-                ". How difficult is it for " + _s.variables.him +
+                ". How difficult is it for " + exp.him +
                 " to do that? "
               ),
               after: "",
@@ -491,6 +488,20 @@ function init() {
     "subj_info",
     "thanks"
   ];
+
+  var name = _.sample(["Pat", "Sam", "Taylor", "Alex", "Eli"]);
+  var gender = _.sample(["men", "women"]);
+  exp.gender = gender;
+  exp.name = name;
+  if (gender == "men") {
+    exp.him = "him";
+    exp.he = "he";
+    exp.his = "his";
+  } else if (gender == "women") {
+    exp.him = "her";
+    exp.he = "she";
+    exp.his = "her";
+  }
 
   exp.data_trials = [];
   //make corresponding slides:
