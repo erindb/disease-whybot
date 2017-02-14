@@ -78,7 +78,14 @@
     </p>
     <button onclick="_s.button()">Continue</button>
     <p class="err">Please fill in the blank before continuing.</p>
-    <p class="escape"><a>Something wrong?</a></p>
+    <p class="escape"><a onclick="open_feedback()">Something wrong?</a></p>
+    <div id="wrong">
+      <label>What's wrong?</label> <select id="feedback">
+        <option value=""></option>
+        <option value="weird">this question is (kind of) weird</option>
+        <option value="impossible">i have no idea what this question is even asking</option>
+      </select>
+    </div>
   </div>
 
   <div class="slide"  id="subj_info">

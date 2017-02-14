@@ -6,6 +6,10 @@ function get_exp_length() {
   console.log("get exp length not implemented");
 }
 
+function open_feedback() {
+  $("#wrong").show();
+}
+
 function resizeInput() {
   var size = $(this).val().length;
   $(this).attr('size', Math.max(size, 10));
@@ -65,7 +69,9 @@ function make_slides(f) {
       this.stim = stim;
 
       $(".err").hide();
+      $("#wrong").hide();
       $('input[type="text"]').attr('size', 10);
+      // $("#wrong").
 
       if (stim.query_type=="text" || stim.query_type=="numeric") {
         $("#select-response").hide();

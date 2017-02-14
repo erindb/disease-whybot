@@ -52,3 +52,7 @@ button {
 .escape {
 	font-size: 0.5em;
 }
+
+#feedback {
+	width: 100px;
+}
