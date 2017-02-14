@@ -6,6 +6,10 @@ function get_exp_length() {
   console.log("get exp length not implemented");
 }
 
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 function make_slides(f) {
   var slides = {};
 
@@ -21,6 +25,11 @@ function make_slides(f) {
   slides.instructions = slide({
     name : "instructions",
     button : function() {
+      document.onkeydown = function(event) {
+        if(event.keyCode == '13') {
+          _s.button();
+        }
+      };
       exp.go(); //use exp.go() if and only if there is no "present" data.
     }
   });
@@ -39,7 +48,12 @@ function make_slides(f) {
       }
     ],
 
-    variables: {},
+    variables: {
+      name: _.sample(["Pat", "Sam", "Taylor", "Alex", "Eli"]),
+      he: "none so far",
+      him: "none so far",
+      his: "none so far"
+    },
 
     trial_level : "disease",
 
@@ -49,6 +63,14 @@ function make_slides(f) {
       this.stim = stim;
 
       $(".err").hide();
+
+      if (stim.query_type=="text" || stim.query_type=="numeric") {
+        $("#select-response").hide();
+        $("#response").show();
+      } else if (stim.query_type=="dropdown") {
+        $("#response").hide();
+        $("#select-response").show();
+      }
 
       if (_s.trial_level == "disease") {
         $(".escape").hide();
@@ -76,7 +98,22 @@ function make_slides(f) {
     },
 
     log_responses : function() {
-      var response = $("#response").val();
+      var response;
+      if (_s.stim.query_type=="dropdown") {
+        response = $("#select-response").val();
+      } else if (_s.stim.query_type=="numeric") {
+        response = $("#response").val();
+        var isValidIntegerRE = /^(1000|[1-9][0-9][0-9]|[1-9][0-9]|[0-9])$/;
+        var isValidInteger = isValidIntegerRE.test(response);
+        if (!isValidInteger) {
+          return false;
+        }
+        // check that it's a number in the correct range
+      } else if (_s.stim.query_type=="text") {
+        response = $("#response").val();
+      } else {
+        response = $("#response").val();
+      }
       // TO DO: check that response parses?
       if (response.length > 0) {
         $("#response").val("");
@@ -87,16 +124,58 @@ function make_slides(f) {
           variable_type: this.stim.variable_type,
           before: this.stim.before,
           after: this.stim.after,
-          trial: this.stim.trial_level
+          trial: this.stim.trial_level,
+          name: _s.variables.name,
+          he: _s.variables.he,
+          him: _s.variables.him,
+          his: _s.variables.his
         });
 
         if (_s.trial_level == "disease") {
+          _s.present = [
+            {
+              before: (
+                capitalizeFirstLetter(_s.variables.D) +
+                " affects "
+              ),
+              after: ".",
+              trial_level: "causes",
+              variable: "gender",
+              options: [
+                "only men",
+                "only women",
+                "both men and women"
+              ],
+              variable_type: "frequenty symptom",
+              query_type: "dropdown"
+            }
+          ];
+          _s.trial_level = "gender";
+          return true;
+        } else if (_s.trial_level == "gender") {
+          if (_s.variables.gender == "both") {
+            _s.variables.gender = _.sample(["men", "women"]);
+          }
+          if (_s.variables.gender == "men") {
+            _s.variables.him = "him";
+            _s.variables.he = "he";
+            _s.variables.his = "his";
+          } else if (_s.variables.gender == "women") {
+            _s.variables.him = "her";
+            _s.variables.he = "she";
+            _s.variables.his = "her";
+          } else {
+            console.log("error 982374");
+          }
           // Bob has D and this causes him to S.
           // Bob has D because he C.
           // Bob has D, so he should A.
           _s.present = _.shuffle([
             {
-              before: "Bob has " + _s.variables.D + " and this causes him to ",
+              before: (
+                _s.variables.name + " has " + _s.variables.D +
+                " and this causes " + _s.variables.him + " to "
+              ),
               after: " frequently.",
               trial_level: "causes",
               variable: "Sf",
@@ -104,7 +183,10 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: "Bob has " + _s.variables.D + " and this causes him to ",
+              before: (
+                _s.variables.name + " has " + _s.variables.D +
+                " and this causes " + _s.variables.him + " to "
+              ),
               after: " occasionally.",
               trial_level: "causes",
               variable: "So",
@@ -112,7 +194,11 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: "Bob has " + _s.variables.D + " and soon this will cause him to ",
+              before:  (
+                _s.variables.name + " has " + _s.variables.D +
+                " and soon this will cause " + _s.variables.him +
+                " to "
+              ),
               after: ".",
               trial_level: "causes",
               variable: "Ss",
@@ -120,7 +206,11 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: "Bob has " + _s.variables.D + " and eventually this will cause him to ",
+              before:  (
+                _s.variables.name + " has " + _s.variables.D +
+                " and eventually this will cause " + _s.variables.him +
+                " to "
+              ),
               after: ".",
               trial_level: "causes",
               variable: "Se",
@@ -128,16 +218,23 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: "Bob ",
-              after: ", which is why he has " + _s.variables.D + ".",
+              before:  (_s.variables.name + " "),
+              after: ", which is why " + _s.variables.he +
+              " has " + _s.variables.D + ".",
               trial_level: "causes",
               variable: "C",
               variable_type: "cause",
               query_type: "text"
             },
             {
-              before: "Bob has " + _s.variables.D + ". If he ",
-              after: " then he might get better.",
+              before:  (
+                _s.variables.name + " has " + _s.variables.D +
+                ". If " + _s.variables.he + " "
+              ),
+              after: (
+                " then " + _s.variables.he +
+                " might get better."
+              ),
               trial_level: "causes",
               variable: "A",
               variable_type: "action",
@@ -151,10 +248,12 @@ function make_slides(f) {
             // Bob should A, but he doesn’t A, because he R.
             {
             // It would help if Bob A. If he does not do that, it’s probably because he R.
-              before: (
-                "Bob has " + _s.variables.D +
-                ". It would help if he " + _s.variables.A +
-                ". If he does not do that, it's probably because he "),
+              before:  (
+                _s.variables.name + " has " + _s.variables.D +
+                ". It would help if " + _s.variables.he +
+                " " + _s.variables.A +
+                ". If he does not do that, it's probably because he "
+              ),
               after: ".",
               trial_level: "details",
               variable: "R",
@@ -169,7 +268,7 @@ function make_slides(f) {
               trial_level: "details",
               variable: "causeDSf",
               variable_type: "disease->frequent symptom",
-              query_type: "text"
+              query_type: "numeric"
             },
             {
               before: ("Suppose 1000 people have " + _s.variables.D +
@@ -179,7 +278,7 @@ function make_slides(f) {
               trial_level: "details",
               variable: "causeDSo",
               variable_type: "disease->occasional symptom",
-              query_type: "text"
+              query_type: "numeric"
             },
             {
               before: ("Suppose 1000 people have " + _s.variables.D +
@@ -189,7 +288,7 @@ function make_slides(f) {
               trial_level: "details",
               variable: "causeDSs",
               variable_type: "disease->soon symptom",
-              query_type: "text"
+              query_type: "numeric"
             },
             {
               before: ("Suppose 1000 people have " + _s.variables.D +
@@ -199,7 +298,7 @@ function make_slides(f) {
               trial_level: "details",
               variable: "causeDSe",
               variable_type: "disease->eventually symptom",
-              query_type: "text"
+              query_type: "numeric"
             },
             {
               before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D +
@@ -209,7 +308,7 @@ function make_slides(f) {
               trial_level: "details",
               variable: "bSf",
               variable_type: "!disease->frequent symptom",
-              query_type: "text"
+              query_type: "numeric"
             },
             {
               before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D +
@@ -219,7 +318,7 @@ function make_slides(f) {
               trial_level: "details",
               variable: "bSo",
               variable_type: "!disease->occasional symptom",
-              query_type: "text"
+              query_type: "numeric"
             },
             {
               before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D +
@@ -229,7 +328,7 @@ function make_slides(f) {
               trial_level: "details",
               variable: "bSs",
               variable_type: "!disease->soon symptom",
-              query_type: "text"
+              query_type: "numeric"
             },
             {
               before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D +
@@ -239,7 +338,7 @@ function make_slides(f) {
               trial_level: "details",
               variable: "bSe",
               variable_type: "!disease->eventually symptom",
-              query_type: "text"
+              query_type: "numeric"
             },
             // 1000 people have D. How many will S?
             // 1000 people C. How many will get D?
@@ -268,10 +367,12 @@ function make_slides(f) {
             },
             // Bob has D. He should A. How difficult is it for him to do that?
             {
-              before: (
-                "Bob has " + _s.variables.D +
-                " and so he should " + _s.variables.A +
-                ". How difficult is it for him to do that? "
+              before:  (
+                _s.variables.name + " has " + _s.variables.D +
+                " and so " + _s.variables.he +
+                " should " + _s.variables.A +
+                ". How difficult is it for " + _s.variables.him +
+                " to do that? "
               ),
               after: "",
               trial_level: "details",
