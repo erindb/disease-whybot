@@ -10,6 +10,12 @@ function open_feedback() {
   $("#wrong").show();
 }
 
+function maybe_allow_skip() {
+  if ($("#feedback").val() == "impossible") {
+  	$("#skip_button").show();
+  };
+}
+
 function resizeInput() {
   var size = $(this).val().length;
   $(this).attr('size', Math.max(size, 10));
@@ -69,6 +75,7 @@ function make_slides(f) {
       this.stim = stim;
 
       $(".err").hide();
+      $("#skip_button").hide();
       $("#wrong").hide();
       $('input[type="text"]').attr('size', 10);
       // $("#wrong").
@@ -91,10 +98,11 @@ function make_slides(f) {
       $("#after").html(stim.after);
     },
 
-    button : function() {
+    force_continue : function() {
 
       this.rt = (Date.now() - this.startTime)/1000;
-      var success = this.log_responses();
+      var success = this.log_responses(true);
+      $("#feedback").val("");
 
       /* use _stream.apply(this); if and only if there is
       "present" data. (and only *after* responses are logged) */
@@ -106,7 +114,25 @@ function make_slides(f) {
 
     },
 
-    log_responses : function() {
+    button : function() {
+
+      this.rt = (Date.now() - this.startTime)/1000;
+      var success = this.log_responses();
+
+      /* use _stream.apply(this); if and only if there is
+      "present" data. (and only *after* responses are logged) */
+      if (success) {
+        _stream.apply(this);
+      	$("#feedback").val("");
+      } else {
+        $(".err").show();
+      }
+
+    },
+
+    log_responses : function(force) {
+      var feedback = $("#feedback").val();
+      var force = force ? force : false;
       var response;
       if (_s.stim.query_type=="dropdown") {
         response = $("#select-response").val();
@@ -114,7 +140,7 @@ function make_slides(f) {
         response = $("#response").val();
         var isValidIntegerRE = /^(1000|[1-9][0-9][0-9]|[1-9][0-9]|[0-9])$/;
         var isValidInteger = isValidIntegerRE.test(response);
-        if (!isValidInteger) {
+        if (!isValidInteger && !force) {
           return false;
         }
         // check that it's a number in the correct range
@@ -124,7 +150,7 @@ function make_slides(f) {
         response = $("#response").val();
       }
       // TO DO: check that response parses?
-      if (response.length > 0) {
+      if (response.length > 0 || force) {
         $("#response").val("");
         _s.variables[this.stim.variable] = response.toLowerCase();
         exp.data_trials.push({
@@ -137,7 +163,8 @@ function make_slides(f) {
           name: exp.name,
           he: exp.he,
           him: exp.him,
-          his: exp.his
+          his: exp.his,
+          feedback: feedback
         });
 
         if (_s.trial_level == "disease") {

@@ -80,11 +80,15 @@
     <p class="err">Please fill in the blank before continuing.</p>
     <p class="escape"><a onclick="open_feedback()">Something wrong?</a></p>
     <div id="wrong">
-      <label>What's wrong?</label> <select id="feedback">
-        <option value=""></option>
-        <option value="weird">this question is (kind of) weird</option>
-        <option value="impossible">i have no idea what this question is even asking</option>
-      </select>
+      <p>
+	      <label>What's wrong?</label>
+	      <select id="feedback" onchange="maybe_allow_skip()">
+	        <option value=""></option>
+	        <option value="weird">this question is (kind of) weird</option>
+	        <option value="impossible">i have no idea what this question is even asking</option>
+	      </select>
+      </p>
+      <button id="skip_button" onclick="_s.force_continue()">skip this question</button>
     </div>
   </div>
 
