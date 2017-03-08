@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NLP as a Service Test</title>
+<style>
+#parsed {
+  font-family: monospace;
+}
+</style>
+</head>
+
+<body>
+  <p><label>Original:</label> She is great. I really like her. And her favorite thing to do when she is bored is find her friends to go with her to the beach. She has to visit the house she grew up in sometime.</p>
+  <p id="transformed">transformation will appear here!</p>
+
+  <script src="../_shared/js/jquery-1.11.1.min.js"></script>
+	<script>
+  var response = "She is great. I really like her. And her favorite thing to do when she is bored is find her friends to go with her to the beach. She has to visit the house she grew up in sometime. She likes to hang out with her friends. She doesn't eat peanuts. She's allergic to peanuts. But she isn't too worried about it most of the time. Most of her friends know this about her. She tries to stay healthy. She rock climbs and eats a lot of fruit and vegetables.";
+  var parse;
+
+  var properties = {annotators: "tokenize,ssplit,pos,depparse"};
+  var property_string = JSON.stringify(properties);
+  var properties_for_url = encodeURIComponent(property_string);
+  $.ajax({
+    type: "POST",
+    url: 'http://' +
+      'ec2-52-53-243-76.us-west-1.compute.amazonaws.com/' +
+      '?properties=' +
+      properties_for_url,
+    data: response,
+    success: function (data){
+      parse = data;
+      var transformed = do_some_parsing_stuff(data);
+      $("#transformed").html(response);
+    },
+    error: function (responseData, textStatus, errorThrown) {
+        alert('POST failed.');
+    }
+  });
+  
+  var do_some_parsing_stuff = function() {
+    console.log(parse);
+    var sentences = parse.sentences;
+    var index = function(s) {
+      return parseInt(s)-1;
+    };
+
+    // ------------ GET RID OF CONTRACTIONS ------------
+    response = response.replace(/\bs?he's\b/gi, "they're");
+    response = response.replace(/\bs?he'll\b/gi, "they'll");
+
+    // ------------ PRONOUNS ------------
+    response = response.replace(/\bs?he\b/gi, "they");
+    response = response.replace(/\bhis\b/gi, "their");
+    response = response.replace(/\bhim\b/gi, "them");
+    for (var s=0; s<sentences.length; s++) {
+      var sentence = sentences[s];
+      // find where dependent is her
+      var dependencies = sentence["basicDependencies"];
+      var herPronounTypes = dependencies.filter(function(item) {
+        return (item.dependentGloss).match(/her/i);
+      }).map(function(item) {return item.dep;});
+      for (var p=0; p<herPronounTypes.length; p++) {
+        var herPronounType = herPronounTypes[p];
+        if (herPronounType=="dep" || herPronounType=="nmod") {
+          response = response.replace(/her/i, "them");
+        } else if (herPronounType=="nmod:poss") {
+          response = response.replace(/her/i, "their");
+        } else {
+          console.log(herPronounType);
+        }
+      }
+    };
+
+    // ------------ VERBS ------------
+
+    // 1. find verbs with "they" as a subject
+    // 2. convert verbs
+    //    a. is it irregular? if so, lookup table
+    //    b. (else) does it end in s? if so, replace final s with d
+
+    var irregular_verbs = {
+      does: "do",
+      is: "are",
+      has: "have",
+      was: "were",
+      "doesn't": "don't",
+      "isn't": "aren't",
+      "hasn't": "haven't",
+      "wasn't": "weren't"
+    };
+    var irregular_verbs_list = Object.keys(irregular_verbs);
+
+    for (var s=0; s<sentences.length; s++) {
+      var sentence = sentences[s];
+      var dependencies = sentence["basicDependencies"];
+      var tokens = sentence.tokens;
+      // find where pronoun is nsubj:
+          // {
+          //   "dep": "nsubj",
+          //   "governor": "2",
+          //   "governorGloss": "has",
+          //   "dependent": "1",
+          //   "dependentGloss": "She"
+          // },
+      // or find where there's a copula
+          // {
+          //   "dep": "nsubj",
+          //   "governor": "3",
+          //   "governorGloss": "great",
+          //   "dependent": "1",
+          //   "dependentGloss": "She"
+          // },
+          // {
+          //   "dep": "cop",
+          //   "governor": "3",
+          //   "governorGloss": "great",
+          //   "dependent": "2",
+          //   "dependentGloss": "is"
+          // }
+      // or an aux
+          // {
+          //   "dep": "nsubjpass",
+          //   "governor": "10",
+          //   "governorGloss": "bored",
+          //   "dependent": "8",
+          //   "dependentGloss": "she"
+          // },
+          // {
+          //   "dep": "auxpass",
+          //   "governor": "10",
+          //   "governorGloss": "bored",
+          //   "dependent": "9",
+          //   "dependentGloss": "is"
+          // },
+      var verbsToConvert = dependencies.filter(function(item) {
+        var dependentIs3rPerson = item.dependentGloss.match(/(s)he/i);
+        var isSubjOfVerb = item.dep == "nsubj";
+        if (isSubjOfVerb && dependentIs3rPerson) {return true;}
+        var isCop = (item.dep == "cop" || item.dep == "auxpass");
+        if (isCop) {
+          var subjOfCop = dependencies.filter(function(subitem) {
+            return (
+              (
+                subitem.dep == "nsubj" ||
+                subitem.dep == "nsubjpass"
+              ) &&
+              subitem.governor == item.governor
+            );
+          })[0];
+          var subjIs3rdPerson = subjOfCop.dependentGloss.match(/(s)he/i);
+          if (subjIs3rdPerson) {
+            return true;
+          }
+          return false;
+        }
+        return false;
+      }).map(function(item) {
+        var lemma;
+        var actualToken;
+        if (item.dep == "cop" || item.dep == "auxpass") {
+          lemma = item.dependentGloss;
+          actualToken = tokens[index(item.dependent)].word;
+        } else {
+          lemma = item.governorGloss;
+          actualToken = tokens[index(item.governor)].word;
+        }
+        return {
+          lemma: lemma,
+          actualToken: actualToken,
+          pos: tokens[index(item.governor)].pos
+        };
+      });
+      // also deal with "is"
+      for (var v=0; v<verbsToConvert.length; v++) {
+        var verb = verbsToConvert[v];
+        var actualToken = verb.actualToken;
+        var lemma = verb.lemma;
+        var ends_with_ies = (
+          actualToken.slice(actualToken.length-3, actualToken.length-1)
+          ==
+          "ies"
+        );
+        var ends_with_oes = (
+          actualToken.slice(actualToken.length-3, actualToken.length-1)
+          ==
+          "oes"
+        );
+        console.log(verb);
+        console.log(ends_with_ies);
+        console.log(ends_with_oes);
+        var newToken;
+        if (irregular_verbs_list.indexOf(actualToken)>=0) {
+          newToken = irregular_verbs[actualToken];
+        } else if (ends_with_ies) {
+          newToken = actualToken.slice(0, actualToken.length-3) + "y";
+        } else if (ends_with_oes) {
+          newToken = actualToken.slice(0, actualToken.length-3) + "o";
+        } else if (actualToken[actualToken.length-1]=="s") {
+          newToken = actualToken.slice(0, actualToken.length-1);
+        } else {
+          newToken = actualToken;
+        }
+        var actualRE = new RegExp(actualToken, "i");
+        response = response.replace(actualRE, newToken);
+      }
+    };
+    return response;
+  };
+
+	</script>
+
+</body>
+</html>
