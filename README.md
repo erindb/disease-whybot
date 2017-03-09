@@ -1,7 +1,9 @@
 # disease-whybot
+
 try to elicit intuitive theories about disease from adaptive natural language prompts
 
 ## Questions
+
 1. D is a disease.
 2. Next level “causes”:
     * Bob has D and this causes him to S.
@@ -18,7 +20,13 @@ try to elicit intuitive theories about disease from adaptive natural language pr
     * Bob has D because he C, but also because he C2.
 
 ## Analsysis
+
 * Do people mention diseases that matter? That are frequent?
 * Do people know what the symptoms are? How common they are?
 * Do people know what the treatments are? How effective they are?
 * Do people know what the causes are? How predictive they are?
+
+## To Do List
+
+* conjunctions, disjunctions, negation
+    - e.g. "eats too much and doesn't listen to her doctor or maybe has some precondition"
