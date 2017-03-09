@@ -608,7 +608,7 @@ function make_slides(f) {
               query_type: "text"
             },
             {
-              before: ("Suppose 1000 people have " + _s.variables.D +
+              before: ("Suppose 1000 people have " + _s.variables.D_transformed_to_they +
                 ". How many of them will " + _s.variables.Sf_transformed_to_they +
                 " frequently?"),
               after: "",
@@ -618,7 +618,7 @@ function make_slides(f) {
               query_type: "numeric"
             },
             {
-              before: ("Suppose 1000 people have " + _s.variables.D +
+              before: ("Suppose 1000 people have " + _s.variables.D_transformed_to_they +
                 ". How many of them will " + _s.variables.So_transformed_to_they +
                 " occasionally?"),
               after: "",
@@ -628,7 +628,7 @@ function make_slides(f) {
               query_type: "numeric"
             },
             {
-              before: ("Suppose 1000 people have " + _s.variables.D +
+              before: ("Suppose 1000 people have " + _s.variables.D_transformed_to_they +
                 ". How many of them will " + _s.variables.Ss_transformed_to_they +
                 " soon?"),
               after: "",
@@ -638,7 +638,7 @@ function make_slides(f) {
               query_type: "numeric"
             },
             {
-              before: ("Suppose 1000 people have " + _s.variables.D +
+              before: ("Suppose 1000 people have " + _s.variables.D_transformed_to_they +
                 ". How many of them will " + _s.variables.Se_transformed_to_they +
                 " eventually?"),
               after: "",
@@ -648,7 +648,7 @@ function make_slides(f) {
               query_type: "numeric"
             },
             {
-              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D +
+              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D_transformed_to_they +
                 ". How many of them will " + _s.variables.Sf_transformed_to_they +
                 " frequently?"),
               after: "",
@@ -658,7 +658,7 @@ function make_slides(f) {
               query_type: "numeric"
             },
             {
-              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D +
+              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D_transformed_to_they +
                 ". How many of them will " + _s.variables.So_transformed_to_they +
                 " occasionally?"),
               after: "",
@@ -668,7 +668,7 @@ function make_slides(f) {
               query_type: "numeric"
             },
             {
-              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D +
+              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D_transformed_to_they +
                 ". How many of them will " + _s.variables.Ss_transformed_to_they +
                 " soon?"),
               after: "",
@@ -678,7 +678,7 @@ function make_slides(f) {
               query_type: "numeric"
             },
             {
-              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D +
+              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D_transformed_to_they +
                 ". How many of them will " + _s.variables.Se_transformed_to_they +
                 " eventually?"),
               after: "",
@@ -690,7 +690,7 @@ function make_slides(f) {
             {
               before: (
                 "Suppose 1000 people " + _s.variables.C_transformed_to_they +
-                ". How many will get " + _s.variables.D + "? "
+                ". How many will get " + _s.variables.D_transformed_to_they + "? "
               ),
               after: "",
               trial_level: "details",
@@ -699,7 +699,7 @@ function make_slides(f) {
               query_type: "numeric"
             },
             {
-              before: ("Suppose 1000 people have " + _s.variables.D +
+              before: ("Suppose 1000 people have " + _s.variables.D_transformed_to_they +
                 " and they " + _s.variables.A_transformed_to_they +
                 ". How many will get better? "),
               after: "",
@@ -711,7 +711,7 @@ function make_slides(f) {
             {
               before:  (
                 exp.name + " has " + _s.variables.D +
-                " and if " + exp.he +
+                " and if " + exp.he + " " +
                 _s.variables.A +
                 " then " + exp.he + " might get better." +
                 " How difficult is it for " + exp.him +
