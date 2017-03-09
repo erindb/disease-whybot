@@ -1,3 +1,267 @@
+var parser_callback = function(data, status) {
+  if (status=="success") {
+    var parse = data;
+  } else if (status=="failure") {
+    var response_string = data;
+  } else {
+    console.log("error 98237402q");
+  }
+};
+
+var get_nlp_data = function(response, callback) {
+  var properties = {annotators: "tokenize,ssplit,pos,depparse"};
+  var property_string = JSON.stringify(properties);
+  var properties_for_url = encodeURIComponent(property_string);
+  $.ajax({
+    type: "POST",
+    url: 'http://' +
+      'ec2-54-219-187-44.us-west-1.compute.amazonaws.com/' +
+      '?properties=' +
+      properties_for_url,
+    data: response,
+    success: callback(data, "success"),
+    error: function (responseData, textStatus, errorThrown) {
+      console.log('POST failed.');
+      callback(response, "failure");
+    }
+  });
+};
+
+var irregular_verbs = {
+  does: "do",
+  is: "are",
+  has: "have",
+  was: "were",
+  "'s": "'re",
+  "doesn't": "don't",
+  "isn't": "aren't",
+  "hasn't": "haven't",
+  "wasn't": "weren't"
+};
+var irregular_verbs_list = Object.keys(irregular_verbs);
+
+var isTheyPron = function(word) {
+  return word.match(/(s)he/i)
+};
+
+var index = function(s) {
+  return parseInt(s)-1;
+};
+
+// ------------ VERBS ------------
+
+// 1. find verbs with "(s)he" as a subject
+// 2. convert verbs
+//    a. is it irregular? if so, lookup table
+//    b. (else) does it end in ies? oes? es? s?
+
+var transform_verb = function(verb) {
+  var ends_with_ies = verb.slice(verb.length-3, verb.length) == "ies";
+  var ends_with_oes = verb.slice(verb.length-3, verb.length) == "oes";
+  var ends_with_es = verb[verb.length-1] == "es";
+  var ends_with_s = verb[verb.length-1] == "s";
+  if (irregular_verbs_list.indexOf(verb)>=0) {
+    return irregular_verbs[verb];
+  } else if (ends_with_ies) {
+    return verb.slice(0, verb.length-3) + "y";
+  } else if (ends_with_oes) {
+    return verb.slice(0, verb.length-3) + "o";
+  } else if (ends_with_es) {
+    return verb.slice(0, verb.length-2) + "e";
+  } else if (ends_with_s) {
+    return verb.slice(0, verb.length-1);
+  } else {
+    return verb;
+  }
+};
+
+var replace_verbs = function(sentence) {
+  var dependencies = sentence["basicDependencies"];
+  var tokens = sentence.tokens;
+
+  // filter to only verbs
+  var all_verbs = tokens.filter(function(token) {
+    return token.pos[0]=="V"
+  });
+
+  var verbs_to_replace = [];
+
+  // extract verbs with (s)he as subject
+  for (var v=0; v<all_verbs.length; v++) {
+    var token = all_verbs[v];
+
+    // find the subject of each verb by looking in the dependency parse
+
+    // if the verb is a governor of some dependency,
+    // then the verb will almost certainly govern its subject.
+    // in this case, we simply check whether the subject is
+    // (s)he.
+    var governor_dependencies = dependencies.filter(function(dependency) {
+      return dependency.governor == token.index;
+    });
+    for (var g=0; g<governor_dependencies.length; g++) {
+      var dependency = governor_dependencies[g];
+      var relation_is_subject = ((dependency.dep == "nsubj"));
+      var they_dependent = isTheyPron(dependency.dependentGloss);
+      if (relation_is_subject && they_dependent) {
+        var verb_index = dependency.governor;
+        var verb_token = tokens.filter(function(token) { 
+          return token.index == verb_index
+        })[0];
+        verbs_to_replace.push(verb_token);
+      }
+    }
+
+    // here's the hard version. sometimes we have to link
+    // aux, auxpass, or cop to a subject.
+
+    var dependent_dependencies = dependencies.filter(function(dependency) {
+      return dependency.dependent == token.index;
+    });
+
+    for (var d=0; d<dependent_dependencies.length; d++) {
+      var dependency = dependent_dependencies[d];
+      var verb_index = dependency.dependent;
+      var dep = dependency.dep;
+      if (dep=="cop" || dep=="auxpass" || dep=="aux") {
+        var predicate = dependency.governor;
+        // search dependencies for the predicate's subject
+        var possible_subject_dependencies = dependencies.filter(
+          function(dependency) {
+            return ((dependency.governor == predicate) &&
+                            (dependency.dep=="nsubj" ||
+                              dependency.dep=="nsubjpass"));
+          }
+        );
+        if (possible_subject_dependencies.length > 0) {
+          var subject_index = index(
+            possible_subject_dependencies[0].dependent
+          );
+          var subject = tokens[subject_index].originalText;
+          if (isTheyPron(subject)) {
+            var verb_token = tokens.filter(function(token) { 
+              return token.index == verb_index
+            })[0];
+            verbs_to_replace.push(verb_token);
+          };
+        };
+      } else if (dep=="conj") {
+        var other_verb_index = dependency.governor;
+        var verbs_to_replace_that_match = verbs_to_replace.filter(
+          function(token) {
+            return token.index == other_verb_index;
+          }
+        );
+        if (verbs_to_replace_that_match.length > 0) {
+          var verb_token = tokens.filter(function(token) { 
+            return token.index == verb_index
+          })[0];
+          verbs_to_replace.push(verb_token);
+        }
+      }
+      // var relation_is_subject = ((dependency.dep == "nsubj"));
+      // var they_dependent = isTheyPron(dependency.dependentGloss);
+      // if (relation_is_subject && they_dependent) {
+      //   var verb_index = dependency.governor;
+      //   var verb_token = tokens.filter(function(token) { 
+      //     return token.index == verb_index
+      //   })[0];
+      //   verbs_to_replace.push(verb_token);
+      // }
+    }
+  }
+
+  for (var v=0; v<verbs_to_replace.length; v++) {
+    var verb_to_replace = verbs_to_replace[v];
+    var token_index = index(verb_to_replace.index);
+    tokens[token_index].new_text = transform_verb(
+      verb_to_replace.originalText
+    );
+  }
+
+  return {
+    basicDependencies: dependencies,
+    tokens: tokens
+  }
+};
+
+// ------------ PRONOUNS ------------
+var easy_pronouns = {
+  she: "they",
+  he: "they",
+  him: "them",
+  his: "their"
+};
+var replace_pronouns = function(sentence) {
+  // response = response.replace(/\bs?he\b/gi, "they");
+  // response = response.replace(/\bhis\b/gi, "their");
+  // response = response.replace(/\bhim\b/gi, "them");
+    var tokens = sentence.tokens;
+    var dependencies = sentence.dependencies;
+    var tokens = tokens.map(function(token) {
+      var text = token.originalText.toLowerCase();
+      if (Object.keys(easy_pronouns).indexOf(text)>=0) {
+        token.new_text = easy_pronouns[text];
+        return token;
+      }
+      if (text == "her") {
+        var pos = token.pos;
+        if (pos == "PRP$") {
+          token.new_text = "their";
+          return token;
+        } else if (pos=="PRP") {
+          token.new_text = "them";
+          return token;
+        } else {
+          console.log("warning 239847");
+        }
+      }
+      return token;
+    });
+    // // find where dependent is her
+    // var dependencies = sentence["basicDependencies"];
+    // var herPronounTypes = dependencies.filter(function(item) {
+    //   return (item.dependentGloss).match(/her/i);
+    // }).map(function(item) {return item.dep;});
+    // for (var p=0; p<herPronounTypes.length; p++) {
+    //   var herPronounType = herPronounTypes[p];
+    //   if (herPronounType=="dep" || herPronounType=="nmod") {
+    //     response = response.replace(/her/i, "them");
+    //   } else if (herPronounType=="nmod:poss") {
+    //     response = response.replace(/her/i, "their");
+    //   } else {
+    //     console.log(herPronounType);
+    //   }
+    // }
+    return {tokens: tokens, basicDependencies: dependencies};
+};
+
+var transform_to_3rd_plural = function() {
+  console.log(parse);
+  var sentences = parse.sentences;
+
+  var sentences = sentences.map(replace_verbs);
+  var sentences = sentences.map(replace_pronouns);
+
+  var make_sentence_strings = function(sentence) {
+    var tokens = sentence.tokens;
+
+    var new_words = tokens.map(function(token) {
+      if (token.new_text) {
+        return token.before + token.new_text;
+      } else {
+        return token.before + token.originalText;
+      }
+    });
+
+    return new_words.join("");
+  };
+
+  response = sentences.map(make_sentence_strings).join("");
+
+  return response;
+};
+
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
@@ -99,7 +363,6 @@ function make_slides(f) {
     },
 
     force_continue : function() {
-
       this.rt = (Date.now() - this.startTime)/1000;
       var success = this.log_responses(true);
       $("#feedback").val("");
@@ -111,7 +374,6 @@ function make_slides(f) {
       } else {
         $(".err").show();
       }
-
     },
 
     button : function() {
@@ -127,7 +389,6 @@ function make_slides(f) {
       } else {
         $(".err").show();
       }
-
     },
 
     log_responses : function(force) {
@@ -469,16 +730,15 @@ function make_slides(f) {
 /// init ///
 function init() {
 
-/*  repeatWorker = false;
-  (function(){
-      var ut_id = "erindb-explanation-20160619";
-      if (UTWorkerLimitReached(ut_id)) {
-        $('.slide').empty();
-        repeatWorker = true;
-        alert("You have already completed the maximum number of HITs allowed by this requester. Please click 'Return HIT' to avoid any impact on your approval rating.");
-      }
-  })();
-*/
+  // repeatWorker = false;
+  // (function(){
+  //     var ut_id = "erindb-explanation-20160619";
+  //     if (UTWorkerLimitReached(ut_id)) {
+  //       $('.slide').empty();
+  //       repeatWorker = true;
+  //       alert("You have already completed the maximum number of HITs allowed by this requester. Please click 'Return HIT' to avoid any impact on your approval rating.");
+  //     }
+  // })();
 
   $('input[type="text"]')
     // event handler
