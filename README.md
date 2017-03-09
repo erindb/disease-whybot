@@ -30,3 +30,5 @@ try to elicit intuitive theories about disease from adaptive natural language pr
 
 * conjunctions, disjunctions, negation
     - e.g. "eats too much and doesn't listen to her doctor or maybe has some precondition"
+* run without turk and save data incrementally
+* implement sliders
