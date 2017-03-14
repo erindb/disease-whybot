@@ -1,3 +1,6 @@
+var experiment_label = "disease_whybot_0";
+// for data collection
+
 var QueryString = function () {
   // This function is anonymous, is executed immediately and 
   // the return value is assigned to QueryString!
@@ -571,6 +574,7 @@ function make_slides(f) {
         encodeURIComponent(
           JSON.stringify(datum_to_log)
         ) +
+        "&experiment=" + experiment_label +
         "&userid=" + userid
       );
       var is_last_cause_trial = _s.trial_level == "causes" && _s.present.length==0;
@@ -827,6 +831,7 @@ function make_slides(f) {
         encodeURIComponent(
           JSON.stringify(subject_data_to_log)
         ) +
+        "&experiment=" + experiment_label +
         "&userid=" + userid + "_subject"
       );
 
