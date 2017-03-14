@@ -26,6 +26,12 @@ try to elicit intuitive theories about disease from adaptive natural language pr
 * Do people know what the treatments are? How effective they are?
 * Do people know what the causes are? How predictive they are?
 
+## Incremental data logging
+
+The file `log_data.php` contains the initial logic to log data.
+
+Navigating to `http://localhost:8000/log_data.php?input={%22some%22:%20%22data%22}&userid=erindb` will log `{"some": "data"}` to the file `erindb.txt`. If the file exists, it will append. If the file does not exist, it will be created.
+
 ## To Do List
 
 * conjunctions, disjunctions, negation
