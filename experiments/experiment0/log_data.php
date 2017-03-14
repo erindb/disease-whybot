@@ -4,9 +4,10 @@
 	</head>
 	<body>
 		<?php
+	    header("Access-Control-Allow-Origin: *");
 		$input = $_GET["input"];
 		$userid = $_GET["userid"];
-		$file = $userid.'.txt';
+		$file = "../../data/".$userid.'.txt';
 		// The new person to add to the file
 		$data = $input."\n";
 		// Write the contents to the file, 

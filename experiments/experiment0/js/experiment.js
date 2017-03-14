@@ -1,3 +1,28 @@
+var QueryString = function () {
+  // This function is anonymous, is executed immediately and 
+  // the return value is assigned to QueryString!
+  var query_string = {};
+  var query = window.location.search.substring(1);
+  var vars = query.split("&");
+  for (var i=0;i<vars.length;i++) {
+    var pair = vars[i].split("=");
+        // If first entry with this name
+    if (typeof query_string[pair[0]] === "undefined") {
+      query_string[pair[0]] = decodeURIComponent(pair[1]);
+        // If second entry with this name
+    } else if (typeof query_string[pair[0]] === "string") {
+      var arr = [ query_string[pair[0]],decodeURIComponent(pair[1]) ];
+      query_string[pair[0]] = arr;
+        // If third or later entry with this name
+    } else {
+      query_string[pair[0]].push(decodeURIComponent(pair[1]));
+    }
+  } 
+  return query_string;
+}();
+
+var userid = QueryString.assignmentId ? QueryString.assignmentId : "unkown_user";
+
 var example_parser_callback = function(response, status, data) {
   var response_string = response;
   if (status=="success") {
@@ -413,7 +438,7 @@ function make_slides(f) {
       } else {
         $(".escape").show();
       }
-      
+
       $("#response").focus();
 
       $("#before").html(stim.before);
@@ -522,7 +547,7 @@ function make_slides(f) {
       $("#response").val("");
       _s.variables[this.stim.variable + "_transformed_to_they"] = (transformed_response + "").toLowerCase();
       _s.variables[this.stim.variable] = (response + "").toLowerCase();
-      exp.data_trials.push({
+      var datum_to_log = {
         response: response,
         variable: this.stim.variable,
         variable_type: this.stim.variable_type,
@@ -533,9 +558,21 @@ function make_slides(f) {
         he: exp.he,
         him: exp.him,
         his: exp.his,
-        feedback: feedback
-      });
-
+        time: Date.now(),
+        rt: this.rt,
+        feedback: feedback,
+        userid: userid
+      };
+      exp.data_trials.push(datum_to_log);
+      var data_log_php_file = "http://localhost:8000/log_data.php";
+      $.get(
+        data_log_php_file + 
+        "?input=" + 
+        encodeURIComponent(
+          JSON.stringify(datum_to_log)
+        ) +
+        "&userid=" + userid
+      );
       var is_last_cause_trial = _s.trial_level == "causes" && _s.present.length==0;
       if (_s.trial_level == "disease") {
         // Bob has D and this causes him to S.
@@ -778,7 +815,22 @@ function make_slides(f) {
     name : "thanks",
     start : function() {
 
-      exp.data= {
+      var subject_data_to_log = {
+        "system" : exp.system,
+        "subject_information" : exp.subj_data,
+        "time_in_minutes" : (Date.now() - exp.startT)/60000
+      };
+      var data_log_php_file = "http://localhost:8000/log_data.php";
+      $.get(
+        data_log_php_file + 
+        "?input=" + 
+        encodeURIComponent(
+          JSON.stringify(subject_data_to_log)
+        ) +
+        "&userid=" + userid + "_subject"
+      );
+
+      exp.data = {
           "trials" : exp.data_trials,
           "catch_trials" : exp.catch_trials,
           "system" : exp.system,
@@ -786,6 +838,7 @@ function make_slides(f) {
           "subject_information" : exp.subj_data,
           "time_in_minutes" : (Date.now() - exp.startT)/60000
       };
+
       setTimeout(function() {turk.submit(exp.data);}, 1000);
     }
   });
