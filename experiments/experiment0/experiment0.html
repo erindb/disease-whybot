@@ -7,6 +7,7 @@
 
     <!-- external general utilities -->
     <script src="../_shared/js/jquery-1.11.1.min.js "></script>
+    <script src="../_shared/full-projects/jquery-ui/jquery-ui.js"></script>
     <script src="../_shared/js/underscore-min.js "></script>
     <script src="../_shared/js/bootstrap.min.js"></script>
 
@@ -68,15 +69,27 @@
     <p class="query">
       <span class="sentence-frame" id='before'>{{before}}</span>
       <input id='response' size='15' type='text'>
+      <span class="sentence-frame" id='after'>{{after}}</span>
       <select id='select-response'>
         <option value=""></option>
         <option value="men">only men</option>
         <option value="women">only women</option>
         <option value="both">both men and women</option>
       </select>
-      <span class="sentence-frame" id='after'>{{after}}</span>
+      <div id="qualitative_response">
+        <table id="slider_table" class="slider_table">
+          <tr>
+            <td class="left">not difficult at all</td>
+            <td class="right">extremely difficult</td>
+          </tr>
+          <tr>
+            <td colspan="2"><div id="single_slider" class="slider"></div></td>
+          </tr>
+        </table>
+      </div>
     </p>
     <button onclick="_s.button()">Continue</button>
+    <p id="processing">Submitting response (please wait...)</p>
     <p class="err">Please fill in the blank before continuing.</p>
     <p class="escape"><a onclick="open_feedback()">Something wrong?</a></p>
     <div id="wrong">

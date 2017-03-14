@@ -12,6 +12,7 @@ var get_nlp_data = function(response, full_sentence, callback) {
   var properties = {annotators: "tokenize,ssplit,pos,depparse"};
   var property_string = JSON.stringify(properties);
   var properties_for_url = encodeURIComponent(property_string);
+  $("#processing").show();
   $.ajax({
     type: "POST",
     url: 'http://' +
@@ -20,12 +21,15 @@ var get_nlp_data = function(response, full_sentence, callback) {
       properties_for_url,
     data: full_sentence,
     success: function(data) {
+      $("#processing").hide();
       callback(response, "success", data);
     },
     error: function (responseData, textStatus, errorThrown) {
+      $("#processing").hide();
       console.log('POST failed.');
       callback(response, "failure");
-    }
+    },
+    timeout: 2000
   });
 };
 
@@ -384,17 +388,24 @@ function make_slides(f) {
       this.stim = stim;
 
       $(".err").hide();
+      $("#processing").hide();
       $("#skip_button").hide();
       $("#wrong").hide();
       $('input[type="text"]').attr('size', 10);
+      $("#qualitative_response").hide();
+      $("#response").hide();
+      $("#select-response").hide();
       // $("#wrong").
 
       if (stim.query_type=="text" || stim.query_type=="numeric") {
-        $("#select-response").hide();
         $("#response").show();
       } else if (stim.query_type=="dropdown") {
-        $("#response").hide();
         $("#select-response").show();
+      } else if (stim.query_type=="qualitative") {
+        // draw sliders
+        $("#qualitative_response").show();
+        _s.init_sliders();
+        exp.sliderPost = null; //erase current slider value
       }
 
       if (_s.trial_level == "disease") {
@@ -402,6 +413,8 @@ function make_slides(f) {
       } else {
         $(".escape").show();
       }
+      
+      $("#response").focus();
 
       $("#before").html(stim.before);
       $("#after").html(stim.after);
@@ -438,6 +451,10 @@ function make_slides(f) {
         response = $("#response").val();
         is_valid = valid_numeric_response(response);
         // check that it's a number in the correct range
+      } else if (_s.stim.query_type=="qualitative") {
+        // get slider response and check validity
+        response = exp.sliderPost;
+        is_valid = exp.sliderPost != null;
       } else if (_s.stim.query_type=="text") {
         response = $("#response").val();
         is_valid = response.length > 0;
@@ -484,6 +501,12 @@ function make_slides(f) {
       } else { final_callback(false); };
     },
 
+    init_sliders : function() {
+      utils.make_slider("#single_slider", function(event, ui) {
+        exp.sliderPost = ui.value;
+      });
+    },
+
     log_responses : function(response, datatype) {
       var datatype = datatype ? datatype : "none";
       if (datatype=="complex") {
@@ -497,8 +520,8 @@ function make_slides(f) {
 
       // TO DO: check that response parses?
       $("#response").val("");
-      _s.variables[this.stim.variable + "_transformed_to_they"] = transformed_response.toLowerCase();
-      _s.variables[this.stim.variable] = response.toLowerCase();
+      _s.variables[this.stim.variable + "_transformed_to_they"] = (transformed_response + "").toLowerCase();
+      _s.variables[this.stim.variable] = (response + "").toLowerCase();
       exp.data_trials.push({
         response: response,
         variable: this.stim.variable,

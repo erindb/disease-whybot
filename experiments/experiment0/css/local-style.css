@@ -2,6 +2,16 @@ button {
 	margin: 10px;
 }
 
+#single_slider {
+	margin-left: 4em;
+	margin-right: 4em;
+}
+
+#processing {
+	font-style: italic;
+	font-size: 0.75em;
+}
+
 .evidence{
 	font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
     font-size: 20px;
