@@ -44,7 +44,7 @@ var get_nlp_data = function(response, full_sentence, callback) {
   $.ajax({
     type: "POST",
     url: 'http://' +
-      'ec2-54-219-187-44.us-west-1.compute.amazonaws.com/' +
+      'ec2-52-53-161-229.us-west-1.compute.amazonaws.com:8080/' +
       '?properties=' +
       properties_for_url,
     data: full_sentence,
@@ -567,7 +567,7 @@ function make_slides(f) {
         userid: userid
       };
       exp.data_trials.push(datum_to_log);
-      var data_log_php_file = "http://localhost:8000/log_data.php";
+      var data_log_php_file = "http://ec2-52-53-161-229.us-west-1.compute.amazonaws.com/log_data.php";
       $.get(
         data_log_php_file + 
         "?input=" + 
@@ -824,7 +824,7 @@ function make_slides(f) {
         "subject_information" : exp.subj_data,
         "time_in_minutes" : (Date.now() - exp.startT)/60000
       };
-      var data_log_php_file = "http://localhost:8000/log_data.php";
+      var data_log_php_file = "http://ec2-52-53-161-229.us-west-1.compute.amazonaws.com/log_data.php";
       $.get(
         data_log_php_file + 
         "?input=" + 
