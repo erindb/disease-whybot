@@ -1,4 +1,4 @@
-var experiment_label = "disease_whybot_0";
+var experiment_label = "disease_whybot_1";
 // for data collection
 
 var QueryString = function () {
