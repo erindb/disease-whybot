@@ -822,7 +822,7 @@ function make_slides(f) {
 
       var subject_data_to_log = {
         "system" : exp.system,
-        "subject_information" : exp.subj_data,,
+        "subject_information" : exp.subj_data,
         "start": exp.startT,
         "time_in_minutes" : (Date.now() - exp.startT)/60000
       };
