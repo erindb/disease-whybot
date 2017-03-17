@@ -564,7 +564,8 @@ function make_slides(f) {
         time: Date.now(),
         rt: this.rt,
         feedback: feedback,
-        userid: userid
+        userid: userid,
+        start: exp.startT
       };
       exp.data_trials.push(datum_to_log);
       var data_log_php_file = "http://ec2-52-53-161-229.us-west-1.compute.amazonaws.com/log_data.php";
@@ -821,7 +822,8 @@ function make_slides(f) {
 
       var subject_data_to_log = {
         "system" : exp.system,
-        "subject_information" : exp.subj_data,
+        "subject_information" : exp.subj_data,,
+        "start": exp.startT,
         "time_in_minutes" : (Date.now() - exp.startT)/60000
       };
       var data_log_php_file = "http://ec2-52-53-161-229.us-west-1.compute.amazonaws.com/log_data.php";
