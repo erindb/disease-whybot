@@ -1,0 +1,261 @@
+---
+title: "Whybot"
+subtitle: "Diseases"
+output: html_document
+fontsize: 12pt 
+---
+
+```{r global_options, include=FALSE}
+rm(list=ls())
+library(knitr)
+knitr::opts_chunk$set(
+  echo=F, warning=F, #cache=T, 
+  message=F, #sanitiz =T, 
+  fig.width = 5, fig.height = 3)
+```
+
+```{r}
+source("~/Settings/startup.R")
+library(igraph)
+```
+
+```{r}
+df = read.csv("../data/processed_data_disease_whybot_0.csv")
+```
+
+Here are pilot participants' comments on the experiment:
+
+```{r}
+problems_and_comments = df %>% filter(subject_information.comments!="" |
+                subject_information.problems!="") %>%
+  group_by(userid) %>%
+  summarise(comments = subject_information.comments,
+            problems = subject_information.problems) %>%
+  as.data.frame %>% flatten %>%
+  mutate(comments = gsub("\n", " ", comments),
+         problems = gsub("\n", " ", problems))
+kable(problems_and_comments)
+```
+
+In general, enough people felt silly or dumb while filling this out that I think we need to improve the interface or the cover story a bit. People are worried about getting stuff wrong. What are some ways of framing this so that they feel comfortable with guessing?
+
+```{r}
+demogragphics = df %>% group_by(userid) %>%
+  summarise(enjoyment = subject_information.enjoyment,
+            assess = subject_information.assess)
+# demogragphics %>%
+#   ggplot(., aes(x=enjoyment)) +
+#   geom_bar() +
+#   ggtitle("enjoyment")
+# demogragphics %>%
+#   ggplot(., aes(x=assess)) +
+#   geom_bar() +
+#   ggtitle("assessment")
+```
+
+What diseases did people give?
+
+```{r, fig.width=5, fig.height=2.5}
+df %>% ggplot(., aes(x=D)) +
+  geom_bar() +
+  ggtitle("illnesses") +
+  theme(axis.text.x=element_text(angle = -90, hjust = 0)) +
+  xlab("")
+```
+
+```{r}
+df = df %>% 
+  mutate(cause = factor(
+    C,
+    levels=c("does not wash his hands",
+             "is unlucky",
+             "slept on his side",
+             "sleeps outside most days",
+             "ate too much garlic",
+             "doesn't fit in",
+             "comes from a family with a history of autism",
+             "got exposed to a friend with the flu",
+             "has genes",
+             "got bitten by a mosquito",
+             "is sick",
+             "is predisposed to have cancer",
+             "smokes",
+             "smoked"),
+    labels=c("habit",
+             "other",
+             "habit",
+             "habit",
+             "event",
+             "other",
+             "genetics",
+             "event",
+             "genetics",
+             "event",
+             "other",
+             "genetics",
+             "habit",
+             "habit")))
+```
+
+```{r, fig.width=5, fig.height=4}
+df %>%
+  ggplot(., aes(x=C, fill=cause)) +
+  geom_bar() +
+  ggtitle("causes") +
+  theme(axis.text.x=element_text(angle = -90, hjust = 0)) +
+  xlab("") +
+  scale_fill_brewer(type="qual", palette=2)
+```
+
+```{r}
+df = df %>%
+  mutate(treatment = factor(
+    A,
+    levels=c("takes medecine",
+             "applies medication",
+             "takes medicine",
+             "sleeps",
+             "gets sleep",
+             "sleeps a lot",
+             "gets a shot",
+             "eats less garlic",
+             "seeks help",
+             "works hard with his therapy,",
+             "finds a cure",
+             "does what the doctors tell him to do",
+             "stops smoking",
+             "gets chemo"),
+    labels=c("medicine",
+             "medicine",
+             "medicine",
+             "sleep",
+             "sleep",
+             "sleep",
+             "other",
+             "other",
+             "other",
+             "other",
+             "other",
+             "other",
+             "other",
+             "other")))
+```
+
+```{r, fig.width=5, fig.height=3.5}
+df %>% ggplot(., aes(x=A, fill=treatment)) +
+  geom_bar() +
+  ggtitle("treatments") +
+  theme(axis.text.x=element_text(angle = -90, hjust = 0)) +
+  xlab("") +
+  scale_fill_brewer(type="qual", palette=2)
+```
+
+```{r}
+df = df %>% mutate( C=char(C), D=char(D), Se=char(Se),
+                    Sf=char(Sf), Ss=char(Ss), So=char(So),
+                    A=char(A), R=char(R))
+```
+
+```{r}
+draw_edges = function(row) {
+  data.frame(
+    source=c(row$C, row$D, row$A,
+             row$D, row$D, row$D,
+             ".",
+             ".", ".", ".",
+             row$R),
+    target=c(row$D, row$Sf, row$D,
+             row$Se, row$So, row$Ss,
+             row$Sf,
+             row$Se, row$So, row$Ss,
+             row$A),
+    strength=c(row$causeCD, row$causeDSf, row$mitigateAD,
+               row$causeDSe, row$causeDSo, row$causeDSs,
+               row$bSf,
+               row$bSe, row$bSo, row$bSs,
+               row$costA),
+    type=c("cause", "cause", "prevent",
+           "cause", "cause", "cause",
+           "cause",
+           "cause", "cause", "cause",
+           "prevent")) %>%
+    mutate(type_number = as.numeric(factor(type)))
+}
+draw_nodes = function(row) {
+  data.frame(
+    id = c(row$R,
+           row$A, row$C,
+           row$D, ".",
+           row$Sf, row$Se, row$So, row$Ss),
+    type = c("reason",
+             "cause", "cause", 
+             "illness", "illness",
+             "symptom", "symptom", "symptom", "symptom")
+  ) %>%
+    group_by(id) %>%
+    summarise(type = type[[1]]) %>%
+    mutate(type_number = as.numeric(factor(
+      type, levels=c("reason", "cause", "illness", "symptom"))))
+}
+
+draw_graph = function(row) {
+  edges = draw_edges(row)
+  nodes = draw_nodes(row)
+  g1 <- graph_from_data_frame(d=edges, vertices=nodes, directed=T) 
+  E(g1)$width <- 1+E(g1)$strength/1000*5
+  
+  colrs <- c("lemonchiffon", "lightgreen", 
+             "lightsteelblue", "lightcoral")
+  V(g1)$color <- colrs[V(g1)$type_number]
+  
+  lineclrs = c("#a7b7a8", "#b7a7a7")
+  edge.col = lineclrs[edges$type_number]
+  
+  latitude = nodes$type_number - 1
+
+  instance_number = c()
+  seen = list()
+  for (i in 1:nrow(nodes)) {
+    instance = char(nodes$type)[i]
+    if (instance %in% names(seen)) {
+      instance_of_this_type_so_far = seen[[instance]] + 1
+    } else {
+      instance_of_this_type_so_far = 1
+    }
+    instance_number <- c(instance_number,
+                          instance_of_this_type_so_far-1)
+    seen[[instance]] <- instance_of_this_type_so_far
+  }
+
+  counts = unname(table(nodes$type)[nodes$type])
+  offsets = instance_number / (counts-1)
+  offsets[is.nan(offsets)] = 0
+  widths = (counts - 1)*2
+  starts = -(counts-1)
+  longitude = starts + offsets*widths
+  
+  l <- matrix(c(longitude, -latitude), ncol=2, byrow=F)
+  h = plot(g1, edge.arrow.size=.5, vertex.size=15,
+           edge.color = edge.col,
+           vertex.frame.color="gray", vertex.label.color="black",
+           vertex.label.cex=0.8, vertex.label.dist=0.8, edge.curved=0,
+           layout=l)
+  print(h)
+}
+```
+
+```{r}
+draw_graph(df[1,])
+draw_graph(df[2,])
+draw_graph(df[4,])
+draw_graph(df[5,])
+draw_graph(df[6,])
+# draw_graph(df[7,])
+draw_graph(df[8,])
+draw_graph(df[9,])
+draw_graph(df[10,])
+draw_graph(df[11,])
+draw_graph(df[12,])
+draw_graph(df[13,])
+draw_graph(df[14,])
+```
