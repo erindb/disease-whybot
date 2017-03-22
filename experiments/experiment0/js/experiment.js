@@ -1,3 +1,34 @@
+var DEBUG = true;
+var debug = function(string) {
+  if (DEBUG) {console.log(string)};
+};
+
+setTimeout(function() {
+  var utt = exp.name + " is sick";
+  var response;
+  var properties = {annotators: "tokenize,ssplit,pos,depparse"};
+  var property_string = JSON.stringify(properties);
+  var properties_for_url = encodeURIComponent(property_string);
+  $.ajax({
+    type: "POST",
+    url: 'http://' +
+      'ec2-52-53-161-229.us-west-1.compute.amazonaws.com:8080/' +
+      '?properties=' +
+      properties_for_url,
+    data: utt,
+    success: function(data) {
+      response = data;
+      replace_verbs(response["sentences"][0]);
+    },
+    error: function (responseData, textStatus, errorThrown) {
+      $("#processing").hide();
+      console.log('POST failed.');
+      callback(response, "failure");
+    },
+    timeout: 2000
+  });
+}, 100);
+
 var experiment_label = "disease_whybot_1";
 // for data collection
 
@@ -83,7 +114,7 @@ var irregular_verbs = {
 var irregular_verbs_list = Object.keys(irregular_verbs);
 
 var isTheyPron = function(word) {
-  return word.match(/s?he/i)
+  return (word.match(/s?he/i) || word==exp.name);
 };
 
 var index = function(s) {
@@ -120,8 +151,6 @@ var transform_verb = function(verb) {
 var replace_verbs = function(sentence) {
   var dependencies = sentence["basicDependencies"];
   var tokens = sentence.tokens;
-
-  console.log(sentence);
 
   // filter to only verbs
   var all_verbs = tokens.filter(function(token) {
@@ -169,17 +198,14 @@ var replace_verbs = function(sentence) {
       var dep = dependency.dep;
       if (dep=="cop" || dep=="auxpass" || dep=="aux") {
         var predicate = dependency.governor;
-        console.log(dependency);
         // search dependencies for the predicate's subject
         var possible_subject_dependencies = dependencies.filter(
           function(possible_predicate_dependency) {
 
             if (possible_predicate_dependency.governor == predicate) {
-              console.log(possible_predicate_dependency);
 
               if (possible_predicate_dependency.dep=="conj") {
                 // negation man. T-T
-                console.log("hai")
                 var other_verb_index = possible_predicate_dependency.governor;
                 var verbs_to_replace_that_match = verbs_to_replace.filter(
                   function(token) {
@@ -194,7 +220,6 @@ var replace_verbs = function(sentence) {
                 }
                 return false;
               }
-
               return (possible_predicate_dependency.dep=="nsubj" ||
                 possible_predicate_dependency.dep=="nsubjpass");
             } else {
@@ -554,6 +579,7 @@ function make_slides(f) {
         response: response,
         variable: this.stim.variable,
         variable_type: this.stim.variable_type,
+        transformed_response: transformed_response,
         before: this.stim.before,
         after: this.stim.after,
         trial: this.stim.trial_level,
