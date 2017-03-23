@@ -4,7 +4,8 @@ var debug = function(string) {
 };
 
 setTimeout(function() {
-  var utt = exp.name + " is sick";
+  var utt = exp.name + " is not cool and eats fish and likes pizza and isn't tired and doesn't want to go to sleep.";
+  debug(utt);
   var response;
   var properties = {annotators: "tokenize,ssplit,pos,depparse"};
   var property_string = JSON.stringify(properties);
@@ -18,7 +19,24 @@ setTimeout(function() {
     data: utt,
     success: function(data) {
       response = data;
-      replace_verbs(response["sentences"][0]);
+      var sentences = response["sentences"];
+      var verbs_are_replaced = _.map(sentences, replace_verbs);
+      var everything_replaced = _.map(verbs_are_replaced, replace_pronouns);
+
+      var make_sentence_strings = function(sentence) {
+        var tokens = sentence.tokens;
+        var new_words = tokens.map(function(token) {
+          if (token.new_text) {
+            return token.before + token.new_text;
+          } else {
+            return token.before + token.originalText;
+          }
+        });
+        return new_words.join("");
+      };
+
+      var full_sentence = everything_replaced.map(make_sentence_strings).join("");
+      debug(full_sentence);
     },
     error: function (responseData, textStatus, errorThrown) {
       $("#processing").hide();
@@ -148,6 +166,79 @@ var transform_verb = function(verb) {
   }
 };
 
+var find_main_predicate = function(dependencies, token, tokens) {
+  // if the verb is a governor of some dependency,
+  // then the verb will almost certainly govern its subject.
+  // in this case, we simply check whether the subject is
+  // (s)he.
+
+  // sometimes we have to link
+  // aux, auxpass, or cop to a subject.
+
+  // could go via conj
+  // could additionally go via aux, cop, etc.
+
+  // search dependencies for a link to a main predicate
+  // if you find one, check if *it* has a link to *another*
+  // main predicate.
+  // if you don't find one, return that token.
+
+  var links = dependencies.filter(function(dependency) {
+    return (
+      (dependency.dependent==token.index) &&
+      (["conj", "aux", "cop", "auxpass"].indexOf(dependency.dep) >= 0)
+    );
+  }).map(function(dependency) {
+    var governor_index = index(dependency.governor);
+    var mainer_predicate = tokens[governor_index];
+    return mainer_predicate;
+  });
+
+  if (links.length==0) {
+    return token;
+  } else {
+    return find_main_predicate(
+      dependencies,
+      links[0],
+      tokens
+    );
+  }
+};
+
+var find_subject_dependency = function(dependencies, token, tokens) {
+  // search for an nsubj or nsubjpass dependency
+  var subject_dependencies = dependencies.filter(function(dependency) {
+    return (
+      (dependency.governor == token.index) &&
+      (["nsubj", "nsubjpass"].indexOf(dependency.dep)>=0)
+    )
+  });
+  if (subject_dependencies.length>0) {
+    return subject_dependencies[0];
+  } else {
+    return false;
+  }
+};
+
+var has_they_subject = function(dependencies, token, tokens) {
+  // here's an even harder version. sometimes we have to
+  // deal with conjunctions.
+
+  // some verbs are aux or cop and their connection
+  // to their subject is via some root predicate
+  var main_predicate = find_main_predicate(dependencies, token, tokens);
+  var subject_dependency = find_subject_dependency(
+    dependencies,
+    main_predicate,
+    tokens
+  );
+  if (subject_dependency) {
+    var subject_index = index(subject_dependency.dependent);
+    return isTheyPron(tokens[subject_index].word);
+  }
+  return false;
+};
+
 var replace_verbs = function(sentence) {
   var dependencies = sentence["basicDependencies"];
   var tokens = sentence.tokens;
@@ -162,107 +253,10 @@ var replace_verbs = function(sentence) {
   // extract verbs with (s)he as subject
   for (var v=0; v<all_verbs.length; v++) {
     var token = all_verbs[v];
-
     // find the subject of each verb by looking in the dependency parse
-
-    // if the verb is a governor of some dependency,
-    // then the verb will almost certainly govern its subject.
-    // in this case, we simply check whether the subject is
-    // (s)he.
-    var governor_dependencies = dependencies.filter(function(dependency) {
-      return dependency.governor == token.index;
-    });
-    for (var g=0; g<governor_dependencies.length; g++) {
-      var dependency = governor_dependencies[g];
-      var relation_is_subject = ((dependency.dep == "nsubj"));
-      var they_dependent = isTheyPron(dependency.dependentGloss);
-      if (relation_is_subject && they_dependent) {
-        var verb_index = dependency.governor;
-        var verb_token = tokens.filter(function(token) { 
-          return token.index == verb_index
-        })[0];
-        verbs_to_replace.push(verb_token);
-      }
-    }
-
-    // here's the hard version. sometimes we have to link
-    // aux, auxpass, or cop to a subject.
-
-    var dependent_dependencies = dependencies.filter(function(dependency) {
-      return dependency.dependent == token.index;
-    });
-
-    for (var d=0; d<dependent_dependencies.length; d++) {
-      var dependency = dependent_dependencies[d];
-      var verb_index = dependency.dependent;
-      var dep = dependency.dep;
-      if (dep=="cop" || dep=="auxpass" || dep=="aux") {
-        var predicate = dependency.governor;
-        // search dependencies for the predicate's subject
-        var possible_subject_dependencies = dependencies.filter(
-          function(possible_predicate_dependency) {
-
-            if (possible_predicate_dependency.governor == predicate) {
-
-              if (possible_predicate_dependency.dep=="conj") {
-                // negation man. T-T
-                var other_verb_index = possible_predicate_dependency.governor;
-                var verbs_to_replace_that_match = verbs_to_replace.filter(
-                  function(token) {
-                    return token.index == other_verb_index;
-                  }
-                );
-                if (verbs_to_replace_that_match.length > 0) {
-                  var verb_token = tokens.filter(function(token) { 
-                    return token.index == verb_index
-                  })[0];
-                  verbs_to_replace.push(verb_token);
-                }
-                return false;
-              }
-              return (possible_predicate_dependency.dep=="nsubj" ||
-                possible_predicate_dependency.dep=="nsubjpass");
-            } else {
-              return false;
-            }
-          }
-        );
-        if (possible_subject_dependencies.length > 0) {
-          var subject_index = index(
-            possible_subject_dependencies[0].dependent
-          );
-          var subject = tokens[subject_index].originalText;
-          if (isTheyPron(subject)) {
-            var verb_token = tokens.filter(function(token) { 
-              return token.index == verb_index
-            })[0];
-            verbs_to_replace.push(verb_token);
-          };
-        };
-      } else if (dep=="conj") {
-        var other_verb_index = dependency.governor;
-        var verbs_to_replace_that_match = verbs_to_replace.filter(
-          function(token) {
-            return token.index == other_verb_index;
-          }
-        );
-        if (verbs_to_replace_that_match.length > 0) {
-          var verb_token = tokens.filter(function(token) { 
-            return token.index == verb_index
-          })[0];
-          verbs_to_replace.push(verb_token);
-        }
-      }
-      // var relation_is_subject = ((dependency.dep == "nsubj"));
-      // var they_dependent = isTheyPron(dependency.dependentGloss);
-      // if (relation_is_subject && they_dependent) {
-      //   var verb_index = dependency.governor;
-      //   var verb_token = tokens.filter(function(token) { 
-      //     return token.index == verb_index
-      //   })[0];
-      //   verbs_to_replace.push(verb_token);
-      // }
-    }
+    if (has_they_subject(dependencies, token, tokens)) {
+      verbs_to_replace.push(token);
+    };
   }
 
   var new_tokens = tokens;
