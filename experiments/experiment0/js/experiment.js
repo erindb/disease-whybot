@@ -319,8 +319,16 @@ function capitalizeFirstLetter(string) {
 }
 
 function get_exp_length() {
-  console.log("get exp length not implemented");
-}
+  // console.log("get exp length not implemented");
+  return (
+    1 + //instructions
+    1 + //disease
+    3 + //level 1
+    8 + //level 2
+    1 + //demographics
+    1 //thanks
+  )
+};
 
 function open_feedback() {
   $("#wrong").show();
