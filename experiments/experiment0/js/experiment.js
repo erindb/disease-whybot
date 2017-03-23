@@ -3,50 +3,6 @@ var debug = function(string) {
   if (DEBUG) {console.log(string)};
 };
 
-setTimeout(function() {
-  var utt = exp.name + " is not cool and eats fish and likes pizza and isn't tired and doesn't want to go to sleep.";
-  debug(utt);
-  var response;
-  var properties = {annotators: "tokenize,ssplit,pos,depparse"};
-  var property_string = JSON.stringify(properties);
-  var properties_for_url = encodeURIComponent(property_string);
-  $.ajax({
-    type: "POST",
-    url: 'http://' +
-      'ec2-52-53-161-229.us-west-1.compute.amazonaws.com:8080/' +
-      '?properties=' +
-      properties_for_url,
-    data: utt,
-    success: function(data) {
-      response = data;
-      var sentences = response["sentences"];
-      var verbs_are_replaced = _.map(sentences, replace_verbs);
-      var everything_replaced = _.map(verbs_are_replaced, replace_pronouns);
-
-      var make_sentence_strings = function(sentence) {
-        var tokens = sentence.tokens;
-        var new_words = tokens.map(function(token) {
-          if (token.new_text) {
-            return token.before + token.new_text;
-          } else {
-            return token.before + token.originalText;
-          }
-        });
-        return new_words.join("");
-      };
-
-      var full_sentence = everything_replaced.map(make_sentence_strings).join("");
-      debug(full_sentence);
-    },
-    error: function (responseData, textStatus, errorThrown) {
-      $("#processing").hide();
-      console.log('POST failed.');
-      callback(response, "failure");
-    },
-    timeout: 2000
-  });
-}, 100);
-
 var experiment_label = "disease_whybot_1";
 // for data collection
 
@@ -556,6 +512,7 @@ function make_slides(f) {
 
     log_responses : function(response, datatype) {
       var datatype = datatype ? datatype : "none";
+      _s.stim.datatype = datatype;
       if (datatype=="complex") {
         var transformed_response = response.transformed_response;
         // log this stuff somewhere so we can use it later
@@ -573,6 +530,7 @@ function make_slides(f) {
         response: response,
         variable: this.stim.variable,
         variable_type: this.stim.variable_type,
+        query_type: this.stim.query_type,
         transformed_response: transformed_response,
         before: this.stim.before,
         after: this.stim.after,
