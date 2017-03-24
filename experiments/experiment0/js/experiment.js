@@ -552,13 +552,22 @@ function make_slides(f) {
 
   slides.instructions = slide({
     name : "instructions",
+    start : function() {
+      $(".err").hide();
+      exp.hasty_subject = false;
+    },
     button : function() {
       document.onkeydown = function(event) {
         if(event.keyCode == '13') {
           _s.button();
         }
       };
-      exp.go(); //use exp.go() if and only if there is no "present" data.
+      if ($("#read_instructions").is(':checked')) {
+        exp.go(); //use exp.go() if and only if there is no "present" data.
+      } else {
+        exp.hasty_subject = true;
+        $(".err").show();
+      }
     }
   });
 
@@ -1023,7 +1032,10 @@ function make_slides(f) {
         education : $("#education").val(),
         problems: $("#problems").val(),
         fairprice: $("#fairprice").val(),
-        comments : $("#comments").val()
+        comments : $("#comments").val(),
+        experiment_name: exp.name,
+        experiment_gender: exp.gender,
+        hasty_subject: exp.hasty_subject
       };
       exp.go(); //use exp.go() if and only if there is no "present" data.
     }
