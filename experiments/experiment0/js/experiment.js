@@ -3,7 +3,7 @@ var debug = function(string) {
   if (DEBUG) {console.log(string)};
 };
 
-var experiment_label = "disease_whybot_1";
+var experiment_label = "disease_whybot_2";
 // for data collection
 
 var QueryString = function () {
@@ -465,7 +465,7 @@ var level1 = [
     variable: "D_prevalence",
     prompt: (
       "Out of 1000 people, about how many have " +
-      span("D_transformed_to_they") + "?"
+      span("D_transformed_to_they") + " right now?"
     )
   }
 ];
