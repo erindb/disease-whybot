@@ -955,6 +955,18 @@ function make_slides(f) {
       "present" data. (and only *after* responses are logged) */
       if (success) {
         exp.data_trials = exp.data_trials.concat(trial_data);
+
+        var data_log_php_file = "http://ec2-52-53-161-229.us-west-1.compute.amazonaws.com/log_data.php";
+        $.get(
+          data_log_php_file + 
+          "?input=" + 
+          encodeURIComponent(
+            JSON.stringify(trial_data)
+          ) +
+          "&experiment=" + experiment_label +
+          "&userid=" + userid
+        );
+
         _stream.apply(_s);
       } else {
         $(".err").show();
