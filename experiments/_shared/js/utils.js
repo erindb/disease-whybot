@@ -118,8 +118,8 @@ var utils = {
 		sliderSize) {
 		var orientation = (orientation == null) ? "horizontal" :
 		orientation;
-	       var step = (step == null)? 0.01: step;
-	      var sliderSize = (sliderSize==null) ? 400: sliderSize;
+	    var step = (step == null)? 0.01: step;
+	    var sliderSize = (sliderSize==null) ? 400: sliderSize;
 		$(label).empty();
 		$(label).slider({
 			range : "min",
@@ -131,9 +131,11 @@ var utils = {
 			change : response_callback,
 			orientation : orientation
 		});
-	    orientation == 'horizontal' ? 
-		$(label).css({"width":sliderSize}) :
+	    if (orientation == 'horizontal') {
+			$(label).css({"width":sliderSize})
+		} else {
 	        $(label).css({"height": sliderSize})
+		}
 		$(label + ' .ui-slider-handle').hide();
 		$(label).mousedown(function(){
 			$(label + ' .ui-slider-handle').show();
