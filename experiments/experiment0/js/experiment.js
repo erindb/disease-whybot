@@ -42,6 +42,7 @@ var example_parser_callback = function(response, status, data) {
 };
 
 var get_nlp_data = function(response, full_sentence, callback) {
+  debug(full_sentence);
   var properties = {annotators: "tokenize,ssplit,pos,depparse"};
   var property_string = JSON.stringify(properties);
   var properties_for_url = encodeURIComponent(property_string);
@@ -88,7 +89,7 @@ var irregular_verbs = {
 var irregular_verbs_list = Object.keys(irregular_verbs);
 
 var isTheyPron = function(word) {
-  return (word.match(/s?he/i) || word==exp.name);
+  return (word.match(/s?he/i) || word==exp.variables.name);
 };
 
 var index = function(s) {
@@ -349,6 +350,194 @@ function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
+function span(class_string) {
+  return "<span class='variable_word " + class_string + "'>{{}}</span>";
+}
+
+function spanify(content, class_string, id) {
+  var element = $("<span/>", {
+    class: class_string,
+    id: id
+  });
+  element.html(content);
+  return element;
+}
+          
+function parse_and_continue(datum_index, trial_data, final_callback) {
+  // parse data
+  var datum = trial_data[datum_index];
+  var response = datum.response;
+  var full_sentence = datum.before_text + response + datum.after_text;
+  get_nlp_data(
+    response,
+    full_sentence,
+    function(response, status, parse) {
+      if (status=="success") {
+        var transformed_response = transform_to_3rd_plural(parse, response, datum.before_text);
+        datum.transformed_response = transformed_response;
+        datum.parse_error = false;
+      } else if (status=="failure") {
+        console.log("post failed");
+        datum.transformed_response = response;
+        datum.parse_error = true;
+      } else {
+        console.log("error -21938409238r");
+      }
+      exp.variables[datum.variable + "_transformed_to_they"] = datum.transformed_response;
+      // now we have the transformed response,
+      // or some stand-in, for one more response
+      // and we have converted all_data accordingly.
+      if (datum_index==(trial_data.length-1)) {
+        final_callback(true, trial_data);
+      } else {
+        parse_and_continue(
+          datum_index+1,
+          trial_data,
+          final_callback
+        );
+      }
+    }
+  );
+};
+
+var level0 = [
+  {
+    query_type: "text",
+    trial_level: 0,
+    variable: "D",
+    before: (span("name") + " has an illness. " +
+              span("HHe") + " has "),
+    after: "."
+  }
+];
+var level1 = [
+  {
+    query_type: "text",
+    trial_level: 1,
+    variable: "C",
+    before: (
+      span("name") + " "
+    ),
+    after: (
+      ", which is why " +
+      span("he") + " has " + span("D") + "."
+    )
+  },
+  {
+    query_type: "text",
+    trial_level: 1,
+    variable: "A",
+    before: (
+      span("name") + " has " + span("D") + 
+      ". If " + span("he") + " "
+    ),
+    after: (
+      ", then " +
+      span("he") + " might get better."
+    )
+  },
+  {
+    query_type: "symptoms_text",
+    trial_level: 1,
+    variable: "S",
+    before: (
+      span("name") + " has " +
+      span("D") + " and this will cause " +
+      span("him") + " to "
+    ),
+    n_symptoms: 3,
+    in_between: " ",
+    after: "."
+  },
+  {
+    query_type: "frequency",
+    trial_level: 1,
+    variable: "D_lifetime",
+    prompt: (
+      "Out of 1000 people," +
+      " about how many will ever get " +
+      span("D_transformed_to_they") + " in their lifetime?"
+    )
+  },
+  {
+    query_type: "frequency",
+    trial_level: 1,
+    variable: "D_prevalence",
+    prompt: (
+      "Out of 1000 people, about how many have " +
+      span("D_transformed_to_they") + "?"
+    )
+  }
+];
+var level2 = [
+  {
+    query_type: "text",
+    trial_level: 2,
+    variable: "R",
+    before: (
+      span("name") + " has " + span("D") +
+      ". It would help if " + span("he") +
+      " " + span("A") +
+      ". If " + span("he") + 
+      " does not do that, it's probably because " +
+      span("he") + " "
+    ),
+    after: "."
+  },
+  {
+    query_type: "frequency",
+    trial_level: 2,
+    variable: "CD",
+    prompt: (
+      "Suppose 100 people " + span("C_transformed_to_they") +
+      ". How many will get " + span("D_transformed_to_they") +
+      "?"
+    )
+  },
+  {
+    query_type: "frequency",
+    trial_level: 2,
+    variable: "AD",
+    prompt: (
+      "Suppose 100 people have " + span("D_transformed_to_they") +
+      " and they " + span("A_transformed_to_they") +
+      ". How many will get better?"
+    )
+  },
+  {
+    query_type: "symptom_frequency",
+    trial_level: 2,
+    n_symptoms: 3,
+    variable: "DS",
+    prompt: (
+      "Suppose 100 people have " + span("D_transformed_to_they") +
+      ". How many of them will..."
+    )
+  },
+  {
+    query_type: "symptom_frequency",
+    trial_level: 2,
+    n_symptoms: 3,
+    variable: "bS",
+    prompt: (
+      "Suppose 100 people <b>do not</b> have " + span("D_transformed_to_they") +
+      ". How many of them will..."
+    )
+  },
+  {
+    query_type: "difficulty",
+    trial_level: 2,
+    variable: "cost",
+    prompt: (
+      span("name") + " has " + span("D") +
+      " and if " + span("he") + " " + span("A") +
+      ", then " + span("he") + " might get better." +
+      " How difficult is it for " + span("him") +
+      " to do that?"
+    )
+  }
+];
+
 function make_slides(f) {
   var slides = {};
 
@@ -376,22 +565,11 @@ function make_slides(f) {
   slides.trial = slide({
     name: "trial",
 
-    present :  [
-      {
-        before: ( exp.name + " has an illness. " + 
-          capitalizeFirstLetter(exp.he) + " has "),
-        after: ".",
-        variable: "D",
-        variable_type: "disease",
-        trial_level: "disease",
-        query_type: "text"
-      }
-    ],
-
-    variables: {
-    },
-
-    trial_level : "disease",
+    present : _.shuffle(level0).concat(
+      _.shuffle(level1).concat(
+        _.shuffle(level2)
+      )
+    ),
 
     present_handle : function(stim) {
 
@@ -402,47 +580,385 @@ function make_slides(f) {
       $("#processing").hide();
       $("#skip_button").hide();
       $("#wrong").hide();
-      $('input[type="text"]').attr('size', 10);
-      $("#qualitative_response").hide();
-      $("#response").hide();
-      $("#select-response").hide();
-      // $("#wrong").
 
-      if (stim.query_type=="text" || stim.query_type=="numeric") {
-        $("#response").show();
-      } else if (stim.query_type=="dropdown") {
-        $("#select-response").show();
-      } else if (stim.query_type=="qualitative") {
-        // draw sliders
-        $("#qualitative_response").show();
-        _s.init_sliders();
-        exp.sliderPost = null; //erase current slider value
-      }
+      var query_type = stim.query_type;
 
-      if (_s.trial_level == "disease") {
-        $(".escape").hide();
+      var setup_query;
+      var setup_response_handlers;
+      var setup_interface;
+      if (query_type=="text") {
+        $(".prompt").html("Fill in the blank.");
+        setup_query = function() {
+          $(".query_wrapper").empty();
+          $(".query_wrapper").append(
+            $("<p/>", {class: "query"})
+          );
+          $(".query").append(spanify(
+            stim.before,
+            "before",
+            "before_" + stim.variable
+          ));
+          $(".query").append(
+            $(
+              "<input>",
+              {
+                id: "response",
+                type: "text"
+              }
+            ).attr('size',10)
+          );
+          $(".query").append(spanify(
+            stim.after,
+            "after",
+            "after_" + stim.variable
+          ));
+        };
+        setup_interface = function() {
+          $("#response").focus();
+          $('input[type="text"]')
+            // event handler
+            .keyup(resizeInput)
+            // resize on page load
+            .each(resizeInput);
+        };
+        setup_response_handlers = function() {
+          _s.response_handlers[stim.variable] = function() {
+            var response = $("#response").val();
+            var feedback = $("#feedback").val();
+            exp.variables[stim.variable] = response;
+            var is_valid = response.length > 0;
+            return {
+              response: response,
+              is_valid: is_valid,
+              feedback: feedback,
+              secondary_response: "NA",
+              secondary_response_type: "NA"
+            };
+          };
+        };
+      } else if (query_type=="symptoms_text") {
+        $(".prompt").html(
+          "Fill in the blanks in " + stim.n_symptoms +
+          " different ways."
+        );
+        setup_query = function() {
+          $(".query_wrapper").empty();
+
+          _.forEach(
+            _.range(0, stim.n_symptoms),
+            function(i) {
+
+              var query = $("<p/>", {class: "query"});
+
+              query.append(spanify(
+                stim.before,
+                "before",
+                "before_" + stim.variable + i
+              ));
+
+              query.append(
+                $(
+                  "<input>",
+                  {
+                    id: "response" + i,
+                    type: "text"
+                  }
+                ).attr('size',10)
+              );
+
+              query.append(spanify(" "));
+
+              var dropdown = $("<select/>", {id: "adverb" + i});
+              // To Do: scramble all but first in list
+              var adverbs = [
+                "",
+                "frequently",
+                "soon",
+                "eventually",
+                "occasionally"
+              ];
+              _.forEach(adverbs, function(adverb) {
+                dropdown.append($(
+                  "<option/>",
+                  {value: adverb, text: adverb}
+                ));
+                query.append(dropdown);
+              });
+
+              query.append(spanify(
+                stim.after,
+                "after",
+                "after_" + stim.variable + i
+              ));
+
+              $(".query_wrapper").append(query);
+            }
+          );
+        };
+        setup_interface = function() {
+          $("#response0").focus();
+          $('input[type="text"]')
+            // event handler
+            .keyup(resizeInput)
+            // resize on page load
+            .each(resizeInput);
+        };
+        setup_response_handlers = function() {
+          _.forEach(_.range(0, stim.n_symptoms), function(i) {
+            _s.response_handlers["S" + i] = function() {
+              var response = $("#response" + i).val();
+              var adverb = $("#adverb" + i).val();
+              var feedback = $("#feedback").val();
+              exp.variables["S" + i] = response;
+              exp.variables["S" + i + "_adverb"] = adverb;
+              var is_valid = response.length>0 & adverb.length>0;
+              return {
+                response: response,
+                is_valid: is_valid,
+                feedback: feedback,
+                secondary_response: adverb,
+                secondary_response_type: "adverb"
+              };
+            };
+          });
+        };
+      } else if (query_type=="frequency") {
+        $(".prompt").html(stim.prompt);
+        setup_query = function() {
+          $(".query_wrapper").empty();
+
+          var slider_wrapper = $("<div/>", {
+            class: "slider_wrapper"
+          });
+          var left = $(
+            "<div/>",
+            {class: "left", text: "no one"}
+          );
+          var right = $(
+            "<div/>",
+            {class: "right", text: "everyone"}
+          );
+          var single_slider = $(
+            "<div/>",
+            {class: "slider frequency_slider", id: "frequency_slider"
+          });
+          slider_wrapper.append(left);
+          slider_wrapper.append(right);
+          slider_wrapper.append(single_slider);
+
+          $(".query_wrapper").append(slider_wrapper);
+
+          exp.sliderPost = null;
+          utils.make_slider(
+            "#frequency_slider",
+            function(event, ui) {
+              exp.sliderPost = ui.value;
+            },
+            "horizontal",
+            0.001,
+            400,
+            5
+          );
+        };
+        setup_interface = function() {};
+        setup_response_handlers = function() {
+          _s.response_handlers[stim.variable] = function() {
+            var response = exp.sliderPost;
+            var feedback = $("#feedback").val();
+            exp.variables[stim.variable] = response;
+            var is_valid = response != null;
+            return {
+              response: response,
+              is_valid: is_valid,
+              feedback: feedback,
+              secondary_response: "NA",
+              secondary_response_type: "NA"
+            };
+          };
+        };
+      } else if (query_type=="symptom_frequency") {
+        setup_query = function() {
+          $(".prompt").html(stim.prompt);
+          $(".query_wrapper").empty();
+          exp.sliderPost = {};
+          $(".query_wrapper").append(
+            $("<div/>", {class: "symptom_wrapper"})
+          );
+          _.range(0, stim.n_symptoms).forEach(function(i) {
+            var variable_label = "S" + i;
+            $(".symptom_wrapper").append($(
+              "<p/>",
+              {
+                class: "symptom",
+                id: "symptom" + i,
+                text: (
+                  "... " +
+                  exp.variables[variable_label + "_transformed_to_they"] +
+                  " " +
+                  exp.variables[variable_label + "_adverb"] +
+                  "?"
+                )
+              }
+            ));
+            var slider_wrapper = $("<div/>", {
+              class: "slider_wrapper"
+            });
+            var left = $(
+              "<div/>",
+              {class: "left", text: "no one"}
+            );
+            var right = $(
+              "<div/>",
+              {class: "right", text: "everyone"}
+            );
+            var single_slider = $(
+              "<div/>",
+              {
+                class: "slider frequency_slider",
+                id: "frequency_slider" + i
+              }
+            );
+            slider_wrapper.append(left);
+            slider_wrapper.append(right);
+            slider_wrapper.append(single_slider);
+
+            $(".symptom_wrapper").append(slider_wrapper);
+
+            utils.make_slider(
+              "#frequency_slider" + i,
+              function(event, ui) {
+                exp.sliderPost[i] = ui.value;
+              },
+              "horizontal",
+              0.001,
+              400,
+              5
+            );
+          });
+        };
+        setup_interface = function() {};
+        setup_response_handlers = function() {
+          _.forEach(_.range(0, stim.n_symptoms), function(i) {
+            _s.response_handlers["S" + i] = function() {
+              var response = exp.sliderPost[i];
+              var feedback = $("#feedback").val();
+              var is_valid = response!=null;
+              return {
+                response: response,
+                is_valid: is_valid,
+                feedback: feedback,
+                secondary_response: "NA",
+                secondary_response_type: "NA"
+              };
+            };
+          });
+        };
+      } else if (query_type=="difficulty") {
+        $(".prompt").html(stim.prompt);
+        setup_query = function() {
+          $(".query_wrapper").empty();
+
+          var slider_wrapper = $("<div/>", {
+            class: "slider_wrapper"
+          });
+          var left = $(
+            "<div/>",
+            {class: "left", text: "not difficult at all"}
+          );
+          var right = $(
+            "<div/>",
+            {class: "right", text: "extremely difficult"}
+          );
+          var single_slider = $(
+            "<div/>",
+            {class: "slider frequency_slider", id: "frequency_slider"
+          });
+          slider_wrapper.append(left);
+          slider_wrapper.append(right);
+          slider_wrapper.append(single_slider);
+
+          $(".query_wrapper").append(slider_wrapper);
+
+          exp.sliderPost = null;
+          utils.make_slider(
+            "#frequency_slider",
+            function(event, ui) {
+              exp.sliderPost = ui.value;
+            },
+            "horizontal",
+            0.001,
+            400,
+            5
+          );
+        };
+        setup_interface = function() {};
+        setup_response_handlers = function() {
+          _s.response_handlers[stim.variable] = function() {
+            var response = exp.sliderPost;
+            var feedback = $("#feedback").val();
+            exp.variables[stim.variable] = response;
+            var is_valid = response != null;
+            return {
+              response: response,
+              is_valid: is_valid,
+              feedback: feedback,
+              secondary_response: "NA",
+              secondary_response_type: "NA"
+            };
+          };
+        };
       } else {
-        $(".escape").show();
+        console.log("error 1928437-1283");
       }
 
-      $("#response").focus();
+      function setup_variables() {
+        // if we're definitely going to give nonsense to the
+        // participant or end up with an error, just keep going.
+        var variable_spans = $(".variable_word");
+        for (var i=0; i<variable_spans.length; i++) {
+          var variable_span = variable_spans[i];
+          var variable = $(variable_span).attr("class").split(".")[0].split(" ")[1];
+          if (typeof(exp.variables[variable])==undefined ||
+            exp.variables[variable]=="") {
+            _s.force_continue();
+            return false;
+          }
+        }
 
-      $("#before").html(stim.before);
-      $("#after").html(stim.after);
+        // for each variable, map it to its class
+        _.forEach(_.keys(exp.variables), function(variable) {
+          $("." + variable).html(exp.variables[variable]);
+        });
+        return true;
+      };
+
+      _s.response_handlers = {};
+      setup_query();
+      if (setup_variables()) {
+        setup_interface();
+        setup_response_handlers();
+      }
     },
 
-    force_continue : function() {
-      this.rt = (Date.now() - this.startTime)/1000;
-      var success = this.log_responses(true);
+    final_callback: function(success, trial_data) {
       $("#feedback").val("");
-
       /* use _stream.apply(this); if and only if there is
       "present" data. (and only *after* responses are logged) */
       if (success) {
-        _stream.apply(this);
+        exp.data_trials = exp.data_trials.concat(trial_data);
+        _stream.apply(_s);
       } else {
         $(".err").show();
       }
+      return;
+    },
+
+    force_continue : function() {
+      console.log("skipping slide! (" + _s.stim.variable + ")")
+      _s.rt = (Date.now() - _s.startTime)/1000;
+      // _s.log_responses(true);
+      _s.final_callback(true);
+      return;
     },
 
     button : function() {
@@ -450,335 +966,46 @@ function make_slides(f) {
       // which may or may not work and needs its own
       // callback.
 
-      this.rt = (Date.now() - this.startTime)/1000;
+      _s.rt = (Date.now() - _s.startTime)/1000;
 
-      // ----- collect response ----
-      var response;
-      var is_valid;
-      if (_s.stim.query_type=="dropdown") {
-        response = $("#select-response").val();
-        is_valid = response.length > 0;
-      } else if (_s.stim.query_type=="numeric") {
-        response = $("#response").val();
-        is_valid = valid_numeric_response(response);
-        // check that it's a number in the correct range
-      } else if (_s.stim.query_type=="qualitative") {
-        // get slider response and check validity
-        response = exp.sliderPost;
-        is_valid = exp.sliderPost != null;
-      } else if (_s.stim.query_type=="text") {
-        response = $("#response").val();
-        is_valid = response.length > 0;
-      } else {
-        response = $("#response").val();
-        is_valid = response.length > 0;
-      }
-
-      var final_callback = function(success) {
-        /* use _stream.apply(this); if and only if there is
-        "present" data. (and only *after* responses are logged) */
-        if (success) {
-          _stream.apply(_s);
-          $("#feedback").val("");
-        } else {
-          $(".err").show();
-        }
-      };
-
-      if (is_valid) {
-        if (_s.stim.query_type=="text") {
-          var full_sentence = _s.stim.before + response + _s.stim.after;
-          get_nlp_data(response, full_sentence, function(response, status, data) {
-            if (status=="success") {
-              var parse = data;
-              var transformed_response = transform_to_3rd_plural(parse, response, _s.stim.before);
-              var complex_response = {
-                response: response,
-                transformed_response: transformed_response
-              };
-              _s.log_responses(complex_response, "complex");
-            } else if (status=="failure") {
-              _s.log_responses(response);
-            } else {
-              console.log("error -21938409238r");
-            }
-            final_callback(true);
-          });
-        } else {
-          // some other response type
-          _s.log_responses(response);
-          final_callback(true);
-        }
-      } else { final_callback(false); };
-    },
-
-    init_sliders : function() {
-      utils.make_slider("#single_slider", function(event, ui) {
-        exp.sliderPost = ui.value;
+      var is_valid = true;
+      var trial_data = [];
+      _.forEach(_.keys(_s.response_handlers), function(variable) {
+        var datum = _s.response_handlers[variable]();
+        if (datum.is_valid==false) {is_valid=false};
+        datum = _.extend(datum, _s.stim);
+        datum = _.extend(datum, {
+          transformed_response: "NA",
+          parse_error: "NA",
+          time: Date.now(),
+          rt: _s.rt,
+          userid: userid,
+          start: exp.startT,
+          before_text: $("#before_" + variable).text(),
+          after_text: $("#after_" + variable).text()
+        });
+        // stim variable is less specific
+        // than this response-handler variable.
+        datum.variable = variable;
+        trial_data.push(datum);
       });
-    },
-
-    log_responses : function(response, datatype) {
-      var datatype = datatype ? datatype : "none";
-      _s.stim.datatype = datatype;
-      if (datatype=="complex") {
-        var transformed_response = response.transformed_response;
-        // log this stuff somewhere so we can use it later
-        response = response.response;
+      if (is_valid) {
+        if (_s.stim.query_type=="text" ||
+                _s.stim.query_type=="symptoms_text") {
+          // try to parse the text, then run final callback
+          parse_and_continue(
+            0,
+            trial_data,
+            _s.final_callback
+          );
+          return;
+        } else {
+          _s.final_callback(true, trial_data);
+          return;
+        }
       } else {
-        transformed_response = response;
-      }
-      var feedback = $("#feedback").val();
-
-      // TO DO: check that response parses?
-      $("#response").val("");
-      _s.variables[this.stim.variable + "_transformed_to_they"] = (transformed_response + "").toLowerCase();
-      _s.variables[this.stim.variable] = (response + "").toLowerCase();
-      var datum_to_log = {
-        response: response,
-        variable: this.stim.variable,
-        variable_type: this.stim.variable_type,
-        query_type: this.stim.query_type,
-        transformed_response: transformed_response,
-        before: this.stim.before,
-        after: this.stim.after,
-        trial: this.stim.trial_level,
-        name: exp.name,
-        he: exp.he,
-        him: exp.him,
-        his: exp.his,
-        time: Date.now(),
-        rt: this.rt,
-        feedback: feedback,
-        userid: userid,
-        start: exp.startT
-      };
-      exp.data_trials.push(datum_to_log);
-      var data_log_php_file = "http://ec2-52-53-161-229.us-west-1.compute.amazonaws.com/log_data.php";
-      $.get(
-        data_log_php_file + 
-        "?input=" + 
-        encodeURIComponent(
-          JSON.stringify(datum_to_log)
-        ) +
-        "&experiment=" + experiment_label +
-        "&userid=" + userid
-      );
-      var is_last_cause_trial = _s.trial_level == "causes" && _s.present.length==0;
-      if (_s.trial_level == "disease") {
-        // Bob has D and this causes him to S.
-        // Bob has D because he C.
-        // Bob has D, so he should A.
-        _s.present = _.shuffle([
-          {
-            before: (
-              exp.name + " has " + _s.variables.D +
-              " and this causes " + exp.him + " to "
-            ),
-            after: " frequently.",
-            trial_level: "causes",
-            variable: "Sf",
-            variable_type: "frequenty symptom",
-            query_type: "text"
-          },
-          {
-            before: (
-              exp.name + " has " + _s.variables.D +
-              " and this causes " + exp.him + " to "
-            ),
-            after: " occasionally.",
-            trial_level: "causes",
-            variable: "So",
-            variable_type: "occasional symptom",
-            query_type: "text"
-          },
-          {
-            before:  (
-              exp.name + " has " + _s.variables.D +
-              " and soon this will cause " + exp.him +
-              " to "
-            ),
-            after: ".",
-            trial_level: "causes",
-            variable: "Ss",
-            variable_type: "soon symptom",
-            query_type: "text"
-          },
-          {
-            before:  (
-              exp.name + " has " + _s.variables.D +
-              " and eventually this will cause " + exp.him +
-              " to "
-            ),
-            after: ".",
-            trial_level: "causes",
-            variable: "Se",
-            variable_type: "eventual symptom",
-            query_type: "text"
-          },
-          {
-            before:  (exp.name + " "),
-            after: ", which is why " + exp.he +
-            " has " + _s.variables.D + ".",
-            trial_level: "causes",
-            variable: "C",
-            variable_type: "cause",
-            query_type: "text"
-          },
-          {
-            before:  (
-              exp.name + " has " + _s.variables.D +
-              ". If " + exp.he + " "
-            ),
-            after: (
-              " then " + exp.he +
-              " might get better."
-            ),
-            trial_level: "causes",
-            variable: "A",
-            variable_type: "action",
-            query_type: "text"
-          }
-        ]);
-        _s.trial_level = "causes";
-        return true;
-      } else if (is_last_cause_trial)  {
-         _s.present = _.shuffle([
-            {
-              // It would help if Bob A. If he does not do that, it’s probably because he R.
-              before:  (
-                exp.name + " has " + _s.variables.D +
-                ". It would help if " + exp.he +
-                " " + _s.variables.A +
-                ". If " + exp.he + " does not do that, it's probably because " + exp.he + " "
-              ),
-              after: ".",
-              trial_level: "details",
-              variable: "R",
-              variable_type: "reason",
-              query_type: "text"
-            },
-            {
-              before: ("Suppose 1000 people have " + _s.variables.D_transformed_to_they +
-                ". How many of them will " + _s.variables.Sf_transformed_to_they +
-                " frequently?"),
-              after: "",
-              trial_level: "details",
-              variable: "causeDSf",
-              variable_type: "disease->frequent symptom",
-              query_type: "numeric"
-            },
-            {
-              before: ("Suppose 1000 people have " + _s.variables.D_transformed_to_they +
-                ". How many of them will " + _s.variables.So_transformed_to_they +
-                " occasionally?"),
-              after: "",
-              trial_level: "details",
-              variable: "causeDSo",
-              variable_type: "disease->occasional symptom",
-              query_type: "numeric"
-            },
-            {
-              before: ("Suppose 1000 people have " + _s.variables.D_transformed_to_they +
-                ". How many of them will " + _s.variables.Ss_transformed_to_they +
-                " soon?"),
-              after: "",
-              trial_level: "details",
-              variable: "causeDSs",
-              variable_type: "disease->soon symptom",
-              query_type: "numeric"
-            },
-            {
-              before: ("Suppose 1000 people have " + _s.variables.D_transformed_to_they +
-                ". How many of them will " + _s.variables.Se_transformed_to_they +
-                " eventually?"),
-              after: "",
-              trial_level: "details",
-              variable: "causeDSe",
-              variable_type: "disease->eventually symptom",
-              query_type: "numeric"
-            },
-            {
-              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D_transformed_to_they +
-                ". How many of them will " + _s.variables.Sf_transformed_to_they +
-                " frequently?"),
-              after: "",
-              trial_level: "details",
-              variable: "bSf",
-              variable_type: "!disease->frequent symptom",
-              query_type: "numeric"
-            },
-            {
-              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D_transformed_to_they +
-                ". How many of them will " + _s.variables.So_transformed_to_they +
-                " occasionally?"),
-              after: "",
-              trial_level: "details",
-              variable: "bSo",
-              variable_type: "!disease->occasional symptom",
-              query_type: "numeric"
-            },
-            {
-              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D_transformed_to_they +
-                ". How many of them will " + _s.variables.Ss_transformed_to_they +
-                " soon?"),
-              after: "",
-              trial_level: "details",
-              variable: "bSs",
-              variable_type: "!disease->soon symptom",
-              query_type: "numeric"
-            },
-            {
-              before: ("Suppose 1000 people <b>do not</b> have " + _s.variables.D_transformed_to_they +
-                ". How many of them will " + _s.variables.Se_transformed_to_they +
-                " eventually?"),
-              after: "",
-              trial_level: "details",
-              variable: "bSe",
-              variable_type: "!disease->eventually symptom",
-              query_type: "numeric"
-            },
-            {
-              before: (
-                "Suppose 1000 people " + _s.variables.C_transformed_to_they +
-                ". How many will get " + _s.variables.D_transformed_to_they + "? "
-              ),
-              after: "",
-              trial_level: "details",
-              variable: "causeCD",
-              variable_type: "cause->disease",
-              query_type: "numeric"
-            },
-            {
-              before: ("Suppose 1000 people have " + _s.variables.D_transformed_to_they +
-                " and they " + _s.variables.A_transformed_to_they +
-                ". How many will get better? "),
-              after: "",
-              trial_level: "details",
-              variable: "mitigateAD",
-              variable_type: "action->disease",
-              query_type: "numeric"
-            },
-            {
-              before:  (
-                exp.name + " has " + _s.variables.D +
-                " and if " + exp.he + " " +
-                _s.variables.A +
-                " then " + exp.he + " might get better." +
-                " How difficult is it for " + exp.him +
-                " to do that? "
-              ),
-              after: "",
-              trial_level: "details",
-              variable: "costA",
-              variable_type: "cost",
-              query_type: "qualitative"
-            }
-        ]);
-        _s.trial_level = "details";
-        return true;
-      } else {
-        return true;
+        _s.final_callback(false, trial_data);
+        return;
       }
     }
   });
@@ -881,32 +1108,30 @@ function init() {
     "i0",
     "instructions",
     "trial",
-    // D is a disease.
-    // Bob has D and this causes him to S.
-    // Bob has D because he C.
-    // Bob has D, so he should A.
-    // Bob should A, but he doesn’t A, because he R.
-    // 1000 people have D. How many will S?
-    // 1000 people C. How many will get D?
-    // Bob has D and he A. How much does it help that he A?
-    // Bob has D. He should A. How difficult is it for him to do that?
     "subj_info",
     "thanks"
   ];
 
   var name = _.sample(["Pat", "Sam", "Taylor", "Alex", "Eli"]);
   var gender = _.sample(["men", "women"]);
-  exp.gender = gender;
-  exp.name = name;
+
+  exp.variables = {
+    name: name,
+    gender: gender
+  };
+
   if (gender == "men") {
-    exp.him = "him";
-    exp.he = "he";
-    exp.his = "his";
+    exp.variables.him = "him";
+    exp.variables.he = "he";
+    exp.variables.his = "his";
   } else if (gender == "women") {
-    exp.him = "her";
-    exp.he = "she";
-    exp.his = "her";
+    exp.variables.him = "her";
+    exp.variables.he = "she";
+    exp.variables.his = "her";
   }
+  exp.variables.HHim = capitalizeFirstLetter(exp.variables.him);
+  exp.variables.HHis = capitalizeFirstLetter(exp.variables.his);
+  exp.variables.HHe = capitalizeFirstLetter(exp.variables.he);
 
   exp.data_trials = [];
   //make corresponding slides:
