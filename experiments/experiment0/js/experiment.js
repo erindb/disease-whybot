@@ -497,6 +497,16 @@ var level2 = [
   {
     query_type: "frequency",
     trial_level: 2,
+    variable: "bD",
+    prompt: (
+      "Suppose 100 people have " + span("D_transformed_to_they") +
+      " and they <b>do not</b> " + span("A_transformed_to_they") +
+      ". How many will get better?"
+    )
+  },
+  {
+    query_type: "frequency",
+    trial_level: 2,
     variable: "AD",
     prompt: (
       "Suppose 100 people have " + span("D_transformed_to_they") +
@@ -1117,7 +1127,7 @@ function init() {
   exp.instructions = "instructions";
 
   // var ntrials = stims.length;
-  var ntrials = 10;
+  var ntrials = 11;
 
   exp.numTrials = ntrials;
 
