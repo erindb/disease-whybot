@@ -458,7 +458,8 @@ var level1 = [
     ),
     after: "NA",
     before: "NA",
-    in_between: "NA"
+    in_between: "NA",
+    n_symptoms: "NA"
   },
   {
     query_type: "frequency",
@@ -470,7 +471,8 @@ var level1 = [
     ),
     after: "NA",
     before: "NA",
-    in_between: "NA"
+    in_between: "NA",
+    n_symptoms: "NA"
   }
 ];
 var level2 = [
@@ -502,7 +504,8 @@ var level2 = [
     ),
     after: "NA",
     before: "NA",
-    in_between: "NA"
+    in_between: "NA",
+    n_symptoms: "NA"
   },
   {
     query_type: "frequency",
@@ -515,7 +518,8 @@ var level2 = [
     ),
     after: "NA",
     before: "NA",
-    in_between: "NA"
+    in_between: "NA",
+    n_symptoms: "NA"
   },
   {
     query_type: "frequency",
@@ -528,7 +532,8 @@ var level2 = [
     ),
     after: "NA",
     before: "NA",
-    in_between: "NA"
+    in_between: "NA",
+    n_symptoms: "NA"
   },
   {
     query_type: "symptom_frequency",
@@ -569,7 +574,8 @@ var level2 = [
     ),
     after: "NA",
     before: "NA",
-    in_between: "NA"
+    in_between: "NA",
+    n_symptoms: "NA"
   }
 ];
 
