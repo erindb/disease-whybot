@@ -780,7 +780,8 @@ function make_slides(f) {
                 is_valid: is_valid,
                 feedback: feedback,
                 secondary_response: adverb,
-                secondary_response_type: "adverb"
+                secondary_response_type: "adverb",
+                variable: stim.variable + i
               };
             };
           });
@@ -902,7 +903,7 @@ function make_slides(f) {
         setup_interface = function() {};
         setup_response_handlers = function() {
           _.forEach(_.range(0, stim.n_symptoms), function(i) {
-            _s.response_handlers["S" + i] = function() {
+            _s.response_handlers[_s.stim.variable + i] = function() {
               var response = exp.sliderPost[i];
               var feedback = $("#feedback").val();
               var is_valid = response!=null;
@@ -911,7 +912,8 @@ function make_slides(f) {
                 is_valid: is_valid,
                 feedback: feedback,
                 secondary_response: "NA",
-                secondary_response_type: "NA"
+                secondary_response_type: "NA",
+                variable: _s.stim.variable + i
               };
             };
           });
@@ -1050,8 +1052,8 @@ function make_slides(f) {
       _.forEach(_.keys(_s.response_handlers), function(variable) {
         var datum = _s.response_handlers[variable]();
         if (datum.is_valid==false) {is_valid=false};
-        datum = _.extend(datum, _s.stim);
-        datum = _.extend(datum, {
+        datum = _.extend(_.clone(_s.stim), datum);
+        datum = _.extend(_.clone(datum), {
           transformed_response: "NA",
           parse_error: "NA",
           time: Date.now(),
