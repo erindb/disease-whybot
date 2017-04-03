@@ -324,6 +324,7 @@ function get_exp_length() {
   return (
     1 + //instructions
     1 + //disease
+    2 + //prevalence
     3 + //level 1
     8 + //level 2
     1 + //demographics
