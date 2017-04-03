@@ -397,7 +397,8 @@ var level0 = [
               span("HHe") + " has "),
     after: ".",
     n_symptoms: "NA",
-    prompt: "NA"
+    prompt: "NA",
+    in_between: "NA"
   }
 ];
 var level1 = [
@@ -413,7 +414,8 @@ var level1 = [
       span("he") + " has " + span("D") + "."
     ),
     n_symptoms: "NA",
-    prompt: "NA"
+    prompt: "NA",
+    in_between: "NA"
   },
   {
     query_type: "text",
@@ -428,7 +430,8 @@ var level1 = [
       span("he") + " might get better."
     ),
     n_symptoms: "NA",
-    prompt: "NA"
+    prompt: "NA",
+    in_between: "NA"
   },
   {
     query_type: "symptoms_text",
@@ -454,7 +457,8 @@ var level1 = [
       span("D_transformed_to_they") + " in their lifetime?"
     ),
     after: "NA",
-    before: "NA"
+    before: "NA",
+    in_between: "NA"
   },
   {
     query_type: "frequency",
@@ -465,7 +469,8 @@ var level1 = [
       span("D_transformed_to_they") + " right now?"
     ),
     after: "NA",
-    before: "NA"
+    before: "NA",
+    in_between: "NA"
   }
 ];
 var level2 = [
@@ -483,7 +488,8 @@ var level2 = [
     ),
     after: ".",
     n_symptoms: "NA",
-    prompt: "NA"
+    prompt: "NA",
+    in_between: "NA"
   },
   {
     query_type: "frequency",
@@ -495,7 +501,8 @@ var level2 = [
       "?"
     ),
     after: "NA",
-    before: "NA"
+    before: "NA",
+    in_between: "NA"
   },
   {
     query_type: "frequency",
@@ -507,7 +514,8 @@ var level2 = [
       ". How many will get better?"
     ),
     after: "NA",
-    before: "NA"
+    before: "NA",
+    in_between: "NA"
   },
   {
     query_type: "frequency",
@@ -519,7 +527,8 @@ var level2 = [
       ". How many will get better?"
     ),
     after: "NA",
-    before: "NA"
+    before: "NA",
+    in_between: "NA"
   },
   {
     query_type: "symptom_frequency",
@@ -531,7 +540,8 @@ var level2 = [
       ". How many of them will..."
     ),
     after: "NA",
-    before: "NA"
+    before: "NA",
+    in_between: "NA"
   },
   {
     query_type: "symptom_frequency",
@@ -543,7 +553,8 @@ var level2 = [
       ". How many of them will..."
     ),
     after: "NA",
-    before: "NA"
+    before: "NA",
+    in_between: "NA"
   },
   {
     query_type: "difficulty",
@@ -557,7 +568,8 @@ var level2 = [
       " to do that?"
     ),
     after: "NA",
-    before: "NA"
+    before: "NA",
+    in_between: "NA"
   }
 ];
 
