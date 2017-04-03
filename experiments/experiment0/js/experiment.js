@@ -407,7 +407,9 @@ var level0 = [
     variable: "D",
     before: (span("name") + " has an illness. " +
               span("HHe") + " has "),
-    after: "."
+    after: ".",
+    n_symptoms: "NA",
+    prompt: "NA"
   }
 ];
 var level1 = [
@@ -421,7 +423,9 @@ var level1 = [
     after: (
       ", which is why " +
       span("he") + " has " + span("D") + "."
-    )
+    ),
+    n_symptoms: "NA",
+    prompt: "NA"
   },
   {
     query_type: "text",
@@ -434,7 +438,9 @@ var level1 = [
     after: (
       ", then " +
       span("he") + " might get better."
-    )
+    ),
+    n_symptoms: "NA",
+    prompt: "NA"
   },
   {
     query_type: "symptoms_text",
@@ -457,7 +463,9 @@ var level1 = [
       "Out of 1000 people," +
       " about how many will ever get " +
       span("D_transformed_to_they") + " in their lifetime?"
-    )
+    ),
+    after: "NA",
+    before: "NA"
   },
   {
     query_type: "frequency",
@@ -466,7 +474,9 @@ var level1 = [
     prompt: (
       "Out of 1000 people, about how many have " +
       span("D_transformed_to_they") + " right now?"
-    )
+    ),
+    after: "NA",
+    before: "NA"
   }
 ];
 var level2 = [
@@ -482,7 +492,9 @@ var level2 = [
       " does not do that, it's probably because " +
       span("he") + " "
     ),
-    after: "."
+    after: ".",
+    n_symptoms: "NA",
+    prompt: "NA"
   },
   {
     query_type: "frequency",
@@ -492,7 +504,9 @@ var level2 = [
       "Suppose 100 people " + span("C_transformed_to_they") +
       ". How many will get " + span("D_transformed_to_they") +
       "?"
-    )
+    ),
+    after: "NA",
+    before: "NA"
   },
   {
     query_type: "frequency",
@@ -502,7 +516,9 @@ var level2 = [
       "Suppose 100 people have " + span("D_transformed_to_they") +
       " and they <b>do not</b> " + span("A_transformed_to_they") +
       ". How many will get better?"
-    )
+    ),
+    after: "NA",
+    before: "NA"
   },
   {
     query_type: "frequency",
@@ -512,7 +528,9 @@ var level2 = [
       "Suppose 100 people have " + span("D_transformed_to_they") +
       " and they " + span("A_transformed_to_they") +
       ". How many will get better?"
-    )
+    ),
+    after: "NA",
+    before: "NA"
   },
   {
     query_type: "symptom_frequency",
@@ -522,7 +540,9 @@ var level2 = [
     prompt: (
       "Suppose 100 people have " + span("D_transformed_to_they") +
       ". How many of them will..."
-    )
+    ),
+    after: "NA",
+    before: "NA"
   },
   {
     query_type: "symptom_frequency",
@@ -532,7 +552,9 @@ var level2 = [
     prompt: (
       "Suppose 100 people <b>do not</b> have " + span("D_transformed_to_they") +
       ". How many of them will..."
-    )
+    ),
+    after: "NA",
+    before: "NA"
   },
   {
     query_type: "difficulty",
@@ -544,7 +566,9 @@ var level2 = [
       ", then " + span("he") + " might get better." +
       " How difficult is it for " + span("him") +
       " to do that?"
-    )
+    ),
+    after: "NA",
+    before: "NA"
   }
 ];
 
