@@ -442,7 +442,6 @@ var level1 = [
     n_symptoms: 3,
     in_between: " ",
     after: ".",
-    n_symptoms: "NA",
     prompt: "NA"
   },
   {
