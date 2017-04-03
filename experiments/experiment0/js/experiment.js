@@ -319,19 +319,6 @@ function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-function get_exp_length() {
-  // console.log("get exp length not implemented");
-  return (
-    1 + //instructions
-    1 + //disease
-    2 + //prevalence
-    3 + //level 1
-    8 + //level 2
-    1 + //demographics
-    1 //thanks
-  )
-};
-
 function open_feedback() {
   $("#wrong").show();
 }
@@ -454,7 +441,9 @@ var level1 = [
     ),
     n_symptoms: 3,
     in_between: " ",
-    after: "."
+    after: ".",
+    n_symptoms: "NA",
+    prompt: "NA"
   },
   {
     query_type: "frequency",
@@ -572,6 +561,19 @@ var level2 = [
     before: "NA"
   }
 ];
+
+function get_exp_length() {
+  // console.log("get exp length not implemented");
+  return (
+    1 + //instructions
+    1 + //checkbox
+    level0.length + //disease
+    level1.length + //level 1
+    level2.length + //level 2
+    1 + //demographics
+    1 //thanks
+  )
+};
 
 function make_slides(f) {
   var slides = {};
