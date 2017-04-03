@@ -581,8 +581,8 @@ function get_exp_length() {
     level0.length + //disease
     level1.length + //level 1
     level2.length + //level 2
-    1 + //demographics
-    1 //thanks
+    1 //+ //demographics
+    //1 //thanks
   )
 };
 
