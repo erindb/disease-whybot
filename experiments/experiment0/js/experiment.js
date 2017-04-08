@@ -49,14 +49,15 @@ var get_nlp_data = function(response, full_sentence, callback) {
   $("#processing").show();
   $.ajax({
     type: "POST",
-    url: 'http://' +
-      'ec2-52-53-161-229.us-west-1.compute.amazonaws.com:8080/' +
+    url: 'https://' +
+      'rxdhawkins.me:400/' +
       '?properties=' +
       properties_for_url,
     data: full_sentence,
     success: function(data) {
       $("#processing").hide();
-      callback(response, "success", data);
+      console.log(JSON.parse(data));
+      callback(response, "success", JSON.parse(data));
     },
     error: function (responseData, textStatus, errorThrown) {
       $("#processing").hide();
@@ -1013,7 +1014,7 @@ function make_slides(f) {
         exp.data_trials = exp.data_trials.concat(trial_data);
 
         trial_data.forEach(function(datum) {
-          var data_log_php_file = "http://ec2-52-53-161-229.us-west-1.compute.amazonaws.com/log_data.php";
+          var data_log_php_file = "https://rxdhawkins.me/erindb/log_data.php";
           $.get(
             data_log_php_file + 
             "?input=" + 
@@ -1121,7 +1122,7 @@ function make_slides(f) {
         "start": exp.startT,
         "time_in_minutes" : (Date.now() - exp.startT)/60000
       };
-      var data_log_php_file = "http://ec2-52-53-161-229.us-west-1.compute.amazonaws.com/log_data.php";
+      var data_log_php_file = "https://rxdhawkins.me/erindb/log_data.php";
       $.get(
         data_log_php_file + 
         "?input=" + 
