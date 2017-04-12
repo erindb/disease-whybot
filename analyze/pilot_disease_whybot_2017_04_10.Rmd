@@ -260,4 +260,116 @@ silent = draw_graph(df[8,])
 silent = draw_graph(df[9,])
 ```
 
+## Aggregate with merged nodes
+
+```{r}
+agg = read.csv("../data/pilot_aggregate_disease_whybot_2017_04_10_wide_form.csv") %>%
+  mutate(A = char(A), C = char(C), D = char(D), S0 = char(S0), S1 = char(S1),
+         S2 = char(S2), S3 = char(S3))
+
+edges = data.frame(
+  source = c(agg$C, agg$A,  agg$D,  agg$D,  agg$D,  agg$D),
+  target = c(agg$D, agg$D, agg$S0, agg$S1, agg$S2, agg$S3),
+  strength = 1,
+  type = rep(c("cause", "prevent", "cause", "cause", "cause", "cause"), each=nrow(agg))
+) %>% mutate(type_number = as.numeric(factor(type)))
+
+unique_nodes = unique(c(agg$C, agg$A, agg$D, agg$S0, agg$S1, agg$S2, agg$S3))
+nodes = data.frame(
+  id = unique_nodes
+)
+  lineclrs = c("#a7b7a8", "#b7a7a7")
+  edge.col = lineclrs[edges$type_number]
+
+  g1 <- graph_from_data_frame(d=edges, vertices=nodes, directed=T)
+  
+  silent = png(paste("graphs/graph_aggregate.png", sep=""),
+               width=1000, height=1000)
+  
+  h = plot(g1, edge.arrow.size=.1, vertex.size=2,
+           edge.color = edge.col,
+           vertex.frame.color="gray", vertex.label.color="black",
+           vertex.label.cex=0.8, vertex.label.dist=0.1,
+           layout=layout.auto
+           )
+  silent = dev.off()
+  
+#   add_layout_ to add the layout to the graph as an attribute.
+# 
+# Other graph layouts: add_layout_; as_bipartite; layout.star; layout_as_tree; layout_in_circle; layout.auto, layout.davidson.harel; layout.gem; layout.graphopt; layout.grid; layout.mds; layout_components; layout_on_sphere; layout_randomly; layout_with_fr; layout_with_kk; layout_with_lgl;
+```
+
+Next, represent each disease as a vector of its possible symptoms, causes, and treatments.
+
+```{r}
+threshold = 0
+dimensions = (function() {
+  treatments = names(table(agg$A)[table(agg$A)>threshold])
+  causes = names(table(agg$C)[table(agg$C)>threshold])
+  all_symptoms = with(agg, c(S0, S1, S2, S3))
+  symptoms = names(table(all_symptoms)[table(all_symptoms)>threshold])
+  symptoms = symptoms[symptoms!="other"]
+  return(data.frame(
+    dimname = c(treatments, causes, symptoms),
+    dimtype = c(rep("A", length(treatments)),
+                rep("C", length(causes)),
+                rep("S", length(symptoms)))
+  ))
+})()
+
+diseases = unique(agg$D)
+vectors = do.call(rbind, lapply(diseases, function(disease) {
+  vector = (dimensions %>% mutate(count = mapply(function(dimname, dimtype) {
+    if (dimtype=="S") {
+      candidates = c((agg %>% filter(D==disease))$S0,
+                     (agg %>% filter(D==disease))$S1,
+                     (agg %>% filter(D==disease))$S2,
+                     (agg %>% filter(D==disease))$S3)
+    } else {
+      candidates = (agg %>% filter(D==disease))[[dimtype]]
+    }
+    return(sum(candidates==dimname))
+  }, char(dimname), char(dimtype))))$count
+  return(vector/agg %>% filter(D==disease) %>% length)
+}) %>% as.data.frame)
+colnames(vectors) = dimensions$dimname
+rownames(vectors) = diseases
+# disease = diseases[1]
+# (dimensions %>% mutate(count = mapply(function(dimname, dimtype) {
+#   if (dimtype=="S") {
+#     candidates = c((agg %>% filter(D==disease))$S0,
+#                    (agg %>% filter(D==disease))$S1,
+#                    (agg %>% filter(D==disease))$S2,
+#                    (agg %>% filter(D==disease))$S3)
+#   } else {
+#     candidates = (agg %>% filter(D==disease))[[dimtype]]
+#   }
+#   return(sum(candidates==dimname))
+# }, char(dimname), char(dimtype))))$count %>% as.numeric %>% str
+```
+
+Now that we have the diseases vectorized, we can make some plots.
+
+dendrogram
+```{r}
+
+```
+
+similarity matrix (euclidean distance)
+```{r}
+dist(vectors, method="euclidean")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
