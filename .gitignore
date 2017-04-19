@@ -2,3 +2,4 @@
 *.Rhistory
 data/disease_whybot*
 *.png
+collect-data/
