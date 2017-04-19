@@ -1,28 +1,70 @@
 source("~/Settings/startup.R")
 library(rjson)
 
+directory = "disease_whybot_2"
+
 read_a_json_file = function(filename) {
   data = do.call(rbind, lapply(readLines(filename), function(line) {
-    as.data.frame(fromJSON(line), stringsAsFactors=F)})) %>% as.data.frame
+    minidf = as.data.frame(fromJSON(line), stringsAsFactors=F)
+    return(minidf)
+  })) %>% as.data.frame
   return(data)
 }
+
+# df = data.frame()
+# for (linenum in 1:length(readLines(filename))) {
+#   line = readLines(filename)[[linenum]]
+#   print(linenum)
+#   minidf = as.data.frame(fromJSON(line), stringsAsFactors=F)
+#   df = rbind(df, minidf)
+# }
+
+files = list.files(directory)
+files = files[files!="empty.txt"]
+files = files[files!="nonsense.txt"]
+
+names = c()
 
 read_data_for_a_user = function(username) {
   print(username)
-  data_file = paste("disease_whybot_0/", username, ".txt", sep="")
-  subject_file = paste("disease_whybot_0/", username, "_subject.txt", sep="")
-  if (subject_file %in% files) {
+  data_file = paste(directory, "/", username, ".txt", sep="")
+  subject_filename = paste(username, "_subject.txt", sep="")
+  subject_file = paste(directory, "/", subject_filename, sep="")
+  if (subject_filename %in% char(files)) {
     data = merge(read_a_json_file(data_file),
                read_a_json_file(subject_file))
   } else {
-    data = read_a_json_file(data_file)
+    data = merge(read_a_json_file(data_file),
+                 data.frame(system.Browser=NA,
+                            system.OS=NA, 
+                            system.screenH=NA,
+                            system.screenW=NA,
+                            subject_information.language=NA,
+                            subject_information.enjoyment=NA,
+                            subject_information.assess=NA,
+                            subject_information.age=NA,
+                            subject_information.gender=NA,
+                            subject_information.education=NA,
+                            subject_information.problems=NA,
+                            subject_information.fairprice=NA,
+                            subject_information.comments=NA,
+                            time_in_minutes=NA))
   }
+  if (!("subject_information.assess" %in% names(data))) {
+    data$subject_information.assess = NA
+  }
+  new_names = names(data)
+  # print(length(names))
+  # print(length(new_names))
+  # print(length(names)==length(new_names))
+  if (length(names)>length(new_names)) {
+    print(setdiff(names, new_names))
+  } else if (length(names)<length(new_names)) {
+    print(setdiff(new_names, names))
+  }
+  names <<- new_names 
   return(data)
 }
-
-files = list.files("disease_whybot_0/")
-files = files[files!="empty.txt"]
-files = files[files!="nonsense.txt"]
 
 is_subject_data = sapply(files, function(x) {
   components = strsplit(x, "_")[[1]]
@@ -30,129 +72,59 @@ is_subject_data = sapply(files, function(x) {
   return(last=="subject.txt")})
 usernames = unlist(strsplit(files[!is_subject_data], ".txt"))
 
-data = do.call(rbind, lapply(usernames, read_data_for_a_user))
+data = do.call(rbind, lapply(usernames, read_data_for_a_user)) %>%
+  filter(!(userid %in% c("erindb1", "erindb2")))
 
-subject_level = data %>% group_by(userid) %>%
-  summarise(comments=subject_information.comments[[1]],
-            problems=subject_information.problems[[1]],
-            time_in_minutes=time_in_minutes[[1]]) %>%
-  as.data.frame 
-subject_level %>% t
-
-simple_data = data %>%
-  filter(!(userid %in% c("erindb", "nonsense"))) %>%
-  mutate(variable = ifelse(variable %in% c("Ss", "Se", "Sf", "So"), "S", variable)) %>%
-  filter(variable %in% c("D", "C", "S", "A")) 
-
-simple_data %>%
-  filter(variable=="D") %>%
-  ggplot(., aes(x=response)) +
-  geom_bar() +
-  theme(axis.text.x=element_text(angle = -90, hjust = 0))
-ggsave("illnesses.png", height=3, width=5)
-simple_data %>%
-  filter(variable=="C") %>%
-  ggplot(., aes(x=response)) +
-  geom_bar() +
-  theme(axis.text.x=element_text(angle = -90, hjust = 0))
-ggsave("causes.png", height=5, width=5)
-simple_data %>%
-  filter(variable=="S") %>%
-  ggplot(., aes(x=response)) +
-  geom_bar() +
-  theme(axis.text.x=element_text(angle = -90, hjust = 0))
-ggsave("symptoms.png", height=5, width=5)
-simple_data %>%
-  filter(variable=="A") %>%
-  ggplot(., aes(x=response)) +
-  geom_bar() +
-  theme(axis.text.x=element_text(angle = -90, hjust = 0))
-ggsave("treatments.png", height=3, width=5)
-
-simple_data %>%
-  ggplot(., aes(x=response)) +
-  facet_wrap(~variable, scale="free") +
-  geom_bar() +
-  theme(axis.text.x=element_text(angle = -90, hjust = 0))
-ggsave("responses.png", height=10, width=8)
-
-subset_illnesses = c("lymphoma", "cancer")
-subset_users = (simple_data %>%
-  filter(variable=="D" & response%in%subset_illnesses))$userid
-simple_data %>% filter(userid %in% subset_users) %>%
-  ggplot(., aes(x=response)) +
-  facet_wrap(~variable, scale="free") +
-  geom_bar() +
-  theme(axis.text.x=element_text(angle = -90, hjust = 0))
-
-subset_illnesses = c("a cold", "the flu")
-subset_users = (simple_data %>%
-                  filter(variable=="D" & response%in%subset_illnesses))$userid
-simple_data %>% filter(userid %in% subset_users) %>%
-  ggplot(., aes(x=response)) +
-  facet_wrap(~variable, scale="free") +
-  geom_bar() +
-  theme(axis.text.x=element_text(angle = -90, hjust = 0))
-
-subset_users = unique((simple_data %>%
-                  filter(variable=="S" & response=="die"))$userid)
-subset_illnesses = unique((simple_data %>% filter(userid %in% subset_users) %>%
-  filter(variable=="D"))$response)
-
-subset_users = unique((simple_data %>%
-                         filter(variable=="S" & response=="cough"))$userid)
-subset_illnesses = unique((simple_data %>% filter(userid %in% subset_users) %>%
-                             filter(variable=="D"))$response)
-subset_illnesses
-
-subset_users = unique((simple_data %>%
-                         filter(variable=="S" & response=="vomit"))$userid)
-subset_illnesses = unique((simple_data %>% filter(userid %in% subset_users) %>%
-                             filter(variable=="D"))$response)
-subset_illnesses
-
-subset_users = unique((simple_data %>%
-                         filter(variable=="S" & response%in%c(
-                           "sleep", "be tired", "be fatigued", "rest")))$userid)
-subset_illnesses = unique((simple_data %>% filter(userid %in% subset_users) %>%
-                             filter(variable=="D"))$response)
-subset_illnesses
-
-subset_illnesses = c("cancer", "lymphoma")
-subset_users = unique((simple_data %>%
-                         filter(variable=="D" & response%in%subset_illnesses))$userid)
-subset_causes = unique((simple_data %>% filter(userid %in% subset_users) %>%
-                             filter(variable=="C"))$response)
-subset_causes
-
-subset_illnesses = c("the flu", "a cold")
-subset_users = unique((simple_data %>%
-                         filter(variable=="D" & response%in%subset_illnesses))$userid)
-subset_causes = unique((simple_data %>% filter(userid %in% subset_users) %>%
-                          filter(variable=="C"))$response)
-subset_causes
-
-ggsave("responses.png", height=10, width=8)
-table(data %>% filter(variable=="S"))
-
-# data %>% filter(variable=="D") %>% select(userid, response)
-# data %>% filter(variable=="C") %>% select(userid, response)
-# data %>% filter(variable=="Sf") %>% select(userid, response)
-# data %>% filter(variable=="So") %>% select(userid, response)
-# data %>% filter(variable=="Se") %>% select(userid, response)
-# data %>% filter(variable=="Ss") %>% select(userid, response)
-# 
-# data %>% filter(feedback %in% c("impossible", "weird")) %>%
-#   mutate(sentence = paste(before, response, after, sep=""),
-#          query=ifelse(variable %in% c("D", "C", "A", "Sf", "Se", "So", "Ss", "R"),
-#            paste(before, "___", after, sep=""),
-#            paste(before, after, sep=""))) %>%
-#   select(sentence, query)
-
-data %>% group_by(userid) %>% summarise(N=length(userid))
+# name	he	him	his	userid	system.Browser	system.OS	system.screenH
+#system.screenW	subject_information.language	subject_information.enjoyment	
+#subject_information.assess	subject_information.age	subject_information.gender
+#subject_information.education	subject_information.problems
+#subject_information.fairprice	subject_information.comments
+#time_in_minutes	A	bSe	bSf	bSo	bSs	C	causeCD	causeDSe	causeDSf
+#causeDSo	causeDSs	costA	D	mitigateAD	R	Se	Sf	So	Ss
 
 wide_data = data %>% 
-  select(response, variable, userid) %>%
+  select(-feedback, -after_text, -before_text, -after, -before,
+         -prompt, -n_symptoms, -in_between, -parse_error, -rt,
+         -start, -is_valid, -secondary_response, -secondary_response_type,
+         -query_type, -trial_level, -time, -transformed_response) %>%
   spread(variable, response)
 
-wide_data %>% write.csv("processed_data.csv")
+anonymize = function(df) {
+  df$userid = as.numeric(as.factor(df$userid))
+  return(df)
+}
+
+wide_data %>%
+  # anonymize %>%
+  write.csv(paste("processed_data_", directory, ".csv", sep=""))
+
+data %>% filter(feedback!="") %>%
+  select(before, after, feedback)
+
+wide_data %>% filter(subject_information.comments!="") %>%
+  group_by(userid) %>%
+  summarise(comments = subject_information.comments) %>%
+  as.data.frame %>% flatten
+
+wide_data %>% filter(subject_information.problems!="") %>%
+  group_by(userid) %>%
+  summarise(comments = subject_information.problems) %>%
+  as.data.frame %>% flatten
+
+
+# data %>% filter(userid=="mdewolf") %>%
+
+# data %>% filter(userid=="abdellah") %>%
+#   filter(variable %in% c(
+#     "bSe","causeDSf","causeDSs",
+#     "bSs","mitigateAD","causeCD","causeDSo","costA","causeDSe",
+#     "bSo", "bSf"
+#     )
+#   ) %>% select(before)
+
+
+
+
+
+
