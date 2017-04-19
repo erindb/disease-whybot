@@ -1,0 +1,778 @@
+---
+title: "Whybot"
+subtitle: "Diseases"
+output: html_document
+fontsize: 12pt 
+---
+
+```{r global_options, include=FALSE}
+rm(list=ls())
+library(knitr)
+knitr::opts_chunk$set(
+  echo=F, warning=F, #cache=T, 
+  message=F, #sanitiz =T, 
+  fig.width = 5, fig.height = 3)
+```
+
+```{r}
+source("~/Settings/startup.R")
+library(igraph)
+library(tm)
+require(proxy)
+library(ggrepel)
+```
+
+```{r}
+df = read.csv("../data/disease_whybot_2017_04_13_wide_form.csv")
+```
+
+Here are mturk pilot participants' comments on the experiment:
+
+```{r}
+problems_and_comments = df %>%
+  filter(comments!="" | !(problems%in%c("None", "no", "No.", "No", ""))) %>%
+  group_by(userid) %>%
+  summarise(comments = comments,
+            problems = problems) %>%
+  as.data.frame %>% flatten %>%
+  mutate(comments = gsub("\n", " ", comments),
+         problems = gsub("\n", " ", problems))
+kable(problems_and_comments)
+```
+
+```{r}
+demogragphics = merge(
+  df %>% select(language, enjoyment, gender, assess,
+                education, hasty_subject, userid) %>%
+    gather("qualitative_qn", "qualitative_response", -userid),
+  df %>% select(age, fairprice, time_in_minutes, userid) %>%
+    gather("numeric_qn", "numeric_response", -userid) %>%
+    mutate(numeric_response = num(numeric_response))
+)
+ggplot(demogragphics, aes(x=qualitative_response)) +
+  geom_bar() +
+  facet_wrap(~qualitative_qn, scale="free") +
+  ggtitle("demographics")
+ggplot(demogragphics, aes(x=numeric_response)) +
+  geom_histogram() +
+  facet_wrap(~numeric_qn, scale="free") +
+  ggtitle("demographics")
+median(df$time_in_minutes)
+```
+
+What diseases did people give?
+
+```{r, fig.width=5, fig.height=2.5}
+df %>% ggplot(., aes(x=D)) +
+  geom_bar() +
+  ggtitle("illnesses") +
+  theme(axis.text.x=element_text(angle = -90, hjust = 0)) +
+  xlab("")
+ggsave("pilot_illnesses.png")
+```
+
+```{r}
+# df = df %>% 
+#   mutate(cause = factor(
+#     C,
+#     levels=c("does not wash his hands",
+#              "is unlucky",
+#              "slept on his side",
+#              "sleeps outside most days",
+#              "ate too much garlic",
+#              "doesn't fit in",
+#              "comes from a family with a history of autism",
+#              "got exposed to a friend with the flu",
+#              "has genes",
+#              "got bitten by a mosquito",
+#              "is sick",
+#              "is predisposed to have cancer",
+#              "smokes",
+#              "smoked"),
+#     labels=c("habit",
+#              "other",
+#              "habit",
+#              "habit",
+#              "event",
+#              "other",
+#              "genetics",
+#              "event",
+#              "genetics",
+#              "event",
+#              "other",
+#              "genetics",
+#              "habit",
+#              "habit")))
+```
+
+```{r, fig.width=5, fig.height=6}
+df %>%
+  ggplot(., aes(x=C#, fill=cause
+                )) +
+  geom_bar() +
+  ggtitle("causes") +
+  theme(axis.text.x=element_text(angle = -90, hjust = 0)) +
+  xlab("") +
+  scale_fill_brewer(type="qual", palette=2)
+```
+
+```{r}
+# df = df %>%
+#   mutate(treatment = factor(
+#     A,
+#     levels=c("rests",
+#              "got rest",
+#              "gets sufficient rest",
+#              "drinks water",
+#              "drinks fluids",
+#              "gets chemo",
+#              "undergoes chemotherapy",
+#              "fights",
+#              "go to the doctor"),
+#     labels=c("rest",
+#              "rest",
+#              "rest",
+#              "drinks water",
+#              "drinks water",
+#              "chemo",
+#              "chemo",
+#              "other",
+#              "other")))
+```
+
+```{r, fig.width=5, fig.height=3.5}
+df %>% ggplot(., aes(x=A#, fill=treatment
+                     )) +
+  geom_bar() +
+  ggtitle("treatments") +
+  theme(axis.text.x=element_text(angle = -90, hjust = 0)) +
+  xlab("") +
+  scale_fill_brewer(type="qual", palette=2)
+```
+
+```{r}
+df = df %>% mutate( C=char(C), D=char(D), S0=char(S0),
+                    S1=char(S1), S2=char(S2),
+                    A=char(A), R=char(R))
+```
+
+```{r}
+draw_edges = function(row) {
+  data.frame(
+    source=c(row$C,
+             row$A,
+             row$D, row$D, row$D,
+             row$R),
+    target=c(row$D,
+             row$D,
+             row$S0, row$S1, row$S2,
+             row$A),
+    strength=c(row$CD/1000,
+               row$AD/1000,
+               row$DS0/1000, row$DS1/1000, row$DS2/1000,
+               row$cost),
+    type=c("cause",
+           "prevent",
+           "cause", "cause", "cause",
+           "prevent")) %>%
+    mutate(type_number = as.numeric(factor(type)))
+}
+draw_nodes = function(row) {
+  data.frame(
+    id = c(row$R,
+           row$A, row$C,
+           row$D,
+           row$S0, row$S1, row$S2
+           ),
+    type = c("reason",
+             "cause", "cause", 
+             "illness",
+             "symptom", "symptom", "symptom"
+             )
+  ) %>%
+    group_by(id) %>%
+    summarise(type = type[[1]]) %>%
+    mutate(type_number = as.numeric(factor(
+      type, levels=c("reason", "cause", "illness", "symptom"))))
+}
+
+draw_graph = function(row) {
+  edges = draw_edges(row)
+  nodes = draw_nodes(row)
+  g1 <- graph_from_data_frame(d=edges, vertices=nodes, directed=T) 
+  E(g1)$width <- 1+E(g1)$strength*5
+  
+  # colrs <- c("lemonchiffon", "lightgreen", 
+  #            "lightsteelblue", "lightcoral")
+  # V(g1)$color <- colrs[V(g1)$type_number]
+  
+  # lineclrs = c("#a7b7a8", "#b7a7a7")
+  lineclrs = c("darkblue", "darkred")
+  edge.col = lineclrs[edges$type_number]
+  
+  latitude = nodes$type_number - 1
+
+  instance_number = c()
+  seen = list()
+  for (i in 1:nrow(nodes)) {
+    instance = char(nodes$type)[i]
+    if (instance %in% names(seen)) {
+      instance_of_this_type_so_far = seen[[instance]] + 1
+    } else {
+      instance_of_this_type_so_far = 1
+    }
+    instance_number <- c(instance_number,
+                          instance_of_this_type_so_far-1)
+    seen[[instance]] <- instance_of_this_type_so_far
+  }
+
+  counts = unname(table(nodes$type)[nodes$type])
+  offsets = instance_number / (counts-1)
+  offsets[is.nan(offsets)] = 0
+  widths = (counts - 1)*2
+  starts = -(counts-1)
+  longitude = starts + offsets*widths
+  
+  silent = png(paste("graphs/expt0/graph_", row["userid"], "_", row["D"], ".png", sep=""),
+      width=400, height=500)
+  
+  l <- matrix(c(longitude, -latitude), ncol=2, byrow=F)
+  h = plot(g1, edge.arrow.size=.5, vertex.size=15,
+           edge.color = edge.col,
+           vertex.color = "gray",
+           vertex.frame.color="gray", vertex.label.color="black",
+           vertex.label.cex=0.8, vertex.label.dist=0.8, edge.curved=0,
+           layout=l
+           )
+  print(h)
+  silent = dev.off()
+}
+```
+
+```{r}
+sapply(1:63, function(i) {draw_graph(df[i,])})
+draw_graph(df[1,])
+```
+
+## Aggregate with merged nodes
+
+### No merging at all
+
+```{r}
+agg_no_merge = read.csv("../data/disease_whybot_2017_04_13_wide_form_manually_merged.csv") %>%
+  mutate(A = char(A), C = char(C), D = char(D),
+         S0 = char(S0), S1 = char(S1), S2 = char(S2),
+         R = char(R))
+```
+
+### Manual merging
+
+```{r}
+agg_manual_merge = read.csv("../data/disease_whybot_2017_04_13_wide_form_manually_merged.csv") %>%
+  mutate(A = char(A_merged), C = char(C_merged), D = char(D),
+         S0 = char(S0_merged), S1 = char(S1_merged), S2 = char(S2_merged),
+         R = char(R_merged))
+```
+
+### Automatic merging
+
+* spelling correction
+* lemmatization
+* remove stop words
+* remove/replace gendered words
+* head words? phrase embeddings?
+
+```{r}
+library(hunspell)
+agg_auto_merge = agg_no_merge %>%
+  mutate()
+```
+
+### Master graph
+
+```{r}
+master_graph = function(agg, label, filtering_function, merge_strength=T, layout="auto",
+                        threshold=0) {
+  agg = filtering_function(agg)
+  edges = data.frame(
+    source = c(agg$C, agg$A,
+               agg$D,  agg$D,  agg$D,
+               agg$R),
+    target = c(agg$D, agg$D,
+               agg$S0, agg$S1, agg$S2,
+               agg$A),
+    strength = c(agg$CD/1000, agg$AD,
+                 agg$DS0/1000, agg$DS1/1000, agg$DS2/1000,
+                 agg$cost),
+    type = rep(c("cause", "prevent", 
+                 "cause", "cause", "cause", 
+                 "prevent"), each=nrow(agg))
+  ) %>% mutate(type_number = as.numeric(factor(type)))
+  edges = edges %>% filter(target != "other" & source!="other" & source!="prevention")
+  if (threshold > 0) {
+    counts = table(c(char(edges$source), char(edges$target)))
+    frequent_nodes = row.names(counts[counts > threshold])
+    edges = edges %>% filter(mapply(function(item1, item2) {
+      (item1 %in% frequent_nodes) & (item2 %in% frequent_nodes)
+    }, source, target))
+  }
+  if (merge_strength) {
+    edges = edges %>% group_by(source, target) %>%
+      summarise(strength = mean(strength),
+                type = type[[1]],
+                type_number = type_number[[1]])
+  }
+  
+  # unique_nodes = unique(c(agg$C, agg$A, agg$D, agg$S0, agg$S1, agg$S2, agg$R))
+  unique_nodes = unique(c(char(edges$source), char(edges$target)))
+  unique_nodes = unique_nodes[!is.na(unique_nodes)]
+  nodes = data.frame(
+    id = unique_nodes,
+    type = sapply(unique_nodes, function(response_text) {
+      if (response_text %in% c(agg$D)) {
+        return("illness")
+      } else if (response_text %in% c(agg$C, agg$A)) {
+        return("cause")
+      } else if (response_text %in% c(agg$S0, agg$S1, agg$S2)) {
+        return("symptom")
+      } else if (response_text %in% c(agg$R)) {
+        return("reason")
+      }
+    })
+  ) %>%
+    filter(id!="prevention") %>%
+    group_by(id) %>%
+    summarise(type = type[[1]]) %>%
+    mutate(type_number = as.numeric(factor(
+      type, levels=c("reason", "cause", "illness", "symptom"))))
+  nodes = nodes %>% filter(id!="other")
+  
+  # lineclrs = c("#a7b7a8", "#b7a7a7")
+  lineclrs = c("slateblue", "indianred")
+  edge.col = lineclrs[edges$type_number]
+  
+  g1 <- graph_from_data_frame(d=edges, vertices=nodes, directed=T)
+  E(g1)$width <- 1+E(g1)$strength*5
+  
+  latitude = nodes$type_number - 1
+  
+  instance_number = c()
+  seen = list()
+  for (i in 1:nrow(nodes)) {
+    instance = char(nodes$type)[i]
+    if (instance %in% names(seen)) {
+      instance_of_this_type_so_far = seen[[instance]] + 1
+    } else {
+      instance_of_this_type_so_far = 1
+    }
+    instance_number <- c(instance_number,
+                         instance_of_this_type_so_far-1)
+    seen[[instance]] <- instance_of_this_type_so_far
+  }
+  
+  counts = unname(table(nodes$type)[nodes$type])
+  offsets = instance_number / (counts-1)
+  offsets[is.nan(offsets)] = 0
+  widths = (counts - 1)*2
+  starts = -(counts-1)
+  longitude = starts + offsets*widths
+  
+  if (layout=="auto") {
+    l = layout.auto
+  } else if (layout=="l") {
+    l <- matrix(c(longitude, -latitude), ncol=2, byrow=F)
+  }
+  
+  silent = png(paste("graphs/graph_", label, "_aggregate_merged.png", sep=""),
+               width=2000, height=2000)
+  
+  h = plot(g1, edge.arrow.size=3, vertex.size=3,
+           vertex.color = "gray",
+           edge.color = edge.col,
+           vertex.frame.color="gray", vertex.label.color="black",
+           vertex.label.cex=3, vertex.label.dist=0, #edge.curved=0,
+           # layout=l
+           layout=l
+  )
+  silent = dev.off()
+}
+master_graph(agg_manual_merge, "manual_merge", function(agg) {return(agg)})
+master_graph(agg_manual_merge, "manual_merge_diabetes_clusterA", function(agg) {
+  return(agg %>% filter(userid %in% c(1, 10, 13, 35, 39, 44, 48, 58)))
+}, merge_strength = F, layout="l", threshold = 1)
+master_graph(agg_manual_merge, "manual_merge_diabetes_clusterB", function(agg) {
+  return(agg %>% filter(userid %in% c(9, 32, 34, 37, 42, 46)))
+}, merge_strength = F, layout="l", threshold = 1)
+
+master_graph(agg_manual_merge, "manual_merge_cancer_clusterA", function(agg) {
+  return(agg %>% filter(userid %in% c(3, 36, 38, 47)))
+}, merge_strength = F, layout="l", threshold = 1)
+master_graph(agg_manual_merge, "manual_merge_cancer_clusterB", function(agg) {
+  return(agg %>% filter(userid %in% c(29, 25, 40, 62, 17, 8, 45, 21, 51, 27)))
+}, merge_strength = F, layout="l", threshold = 1)
+
+master_graph(agg_manual_merge, "manual_merge_depression_clusterA", function(agg) {
+  return(agg %>% filter(userid %in% c(12, 26, 49, 28, 60, 20, 19, 41, 11, 55, 30, 4, 54, 61)))
+}, merge_strength = T, layout="l", threshold = 1)
+master_graph(agg_manual_merge, "manual_merge_depression_clusterB", function(agg) {
+  return(agg %>% filter(userid %in% c(57, 18, 50)))
+}, merge_strength = T, layout="l", threshold = 1)
+```
+
+### Similarity
+
+MDS
+
+```{r}
+get_vectors = function(agg) {
+  threshold = 0
+  dimensions = (function() {
+    treatments = names(table(agg$A)[table(agg$A)>threshold])
+    causes = names(table(agg$C)[table(agg$C)>threshold])
+    all_symptoms = with(agg, c(S0, S1, S2))
+    symptoms = names(table(all_symptoms)[table(all_symptoms)>threshold])
+    symptoms = symptoms[symptoms!="other"]
+    return(data.frame(
+      dimname = c(treatments, causes, symptoms),
+      dimtype = c(rep("A", length(treatments)),
+                  rep("C", length(causes)),
+                  rep("S", length(symptoms)))
+    ))
+  })()
+  
+  diseases = unique(agg$D)
+  participants = unique(agg$userid)
+  vectors = do.call(rbind, lapply(participants, function(participant) {
+    vector = (dimensions %>% mutate(count = mapply(function(dimname, dimtype) {
+      if (dimtype=="S") {
+        candidates = c((agg %>% filter(userid==participant))$S0,
+                       (agg %>% filter(userid==participant))$S1,
+                       (agg %>% filter(userid==participant))$S2)
+      } else {
+        candidates = (agg %>% filter(userid==participant))[[dimtype]]
+      }
+      return(sum(candidates==dimname))
+    }, char(dimname), char(dimtype))))$count
+    # return((vector+0.001)/sum(vector+0.001))
+    return(vector)
+  }) %>% as.data.frame)
+  colnames(vectors) = with(dimensions, paste(dimname, dimtype))
+  rownames(vectors) = char(participants)
+  vectors = vectors %>% as.data.frame %>% mutate(participants = participants)
+  vectors = vectors %>% filter(!is.nan(`sleep S`))
+  row.names(vectors) = vectors$participants
+  vectors = vectors %>% select(-participants)
+  return(vectors)
+}
+```
+
+```{r}
+draw_mds = function(agg, label) {
+  vectors = get_vectors(agg)
+  d = dist(vectors, method="cosine")
+
+  fit <- cmdscale(d,eig=TRUE, k=2) # k is the number of dim
+  fit # view results
+  
+  set.seed(42)
+  
+  # plot solution 
+  data.frame(
+    x = fit$points[,1],
+    y = fit$points[,2],
+    illness = agg[row.names(fit$points), "D"]
+  ) %>%
+  ggplot(., aes(x = x, y = y,
+                   colour = illness)) +
+    geom_point() +
+    geom_text_repel(aes(label = row.names(fit$points)), size=5) +
+    ggtitle("MDS") + ylab("") + xlab("") + xlim(-.5, .7)
+  ggsave(paste("graphs/mds_", label, ".png", sep=""), width=9, height=5)
+}
+draw_mds(agg_manual_merge, "manual_merge")
+```
+
+
+<!--
+
+```{r}
+draw_illness_graph = function(disease, merged) {
+  
+  agg = read.csv("../data/disease_whybot_2017_04_13_wide_form_manually_merged.csv") %>%
+    mutate(A = char(A), A_merged = char(A_merged),
+           C = char(C), C_merged = char(C_merged),
+           D = char(D),
+           S0 = char(S0), S0_merged = char(S0_merged),
+           S1 = char(S1), S1_merged = char(S1_merged),
+           S2 = char(S2), S2_merged = char(S2_merged))
+  
+  if (disease!=F) {
+    agg = agg %>%
+      filter(D==disease)
+  } else if (merged) {
+    counts = with(agg, table(c(D, A_merged, C_merged, S0_merged, S1_merged, S2_merged)))
+    overlaps = names(counts[counts>1])
+  } else {
+    counts = with(agg, table(c(D, A, C, S0, S1, S2)))
+    overlaps = names(counts[counts>1])
+  }
+  
+  if (merged) {
+    edges = data.frame(
+      source = c(agg$C_merged, agg$A_merged,  agg$D,  agg$D,  agg$D),
+      target = c(agg$D, agg$D, agg$S0_merged, agg$S1_merged, agg$S2_merged),
+      strength = c(agg$CD, agg$AD, agg$DS0, agg$DS1, agg$DS2),
+      type = rep(c("cause", "prevent", "cause", "cause", "cause"), each=nrow(agg))
+    ) %>% mutate(type_number = as.numeric(factor(type)))
+  } else {
+    edges = data.frame(
+      source = c(agg$C, agg$A,  agg$D,  agg$D,  agg$D),
+      target = c(agg$D, agg$D, agg$S0, agg$S1, agg$S2),
+      strength = c(agg$CD, agg$AD, agg$DS0, agg$DS1, agg$DS2),
+      type = rep(c("cause", "prevent", "cause", "cause", "cause"), each=nrow(agg))
+    ) %>% mutate(type_number = as.numeric(factor(type)))
+  }
+  
+  if (disease==F) {
+    edges = edges %>% filter(source %in% overlaps & target %in% overlaps)
+    unique_nodes = overlaps
+  } else {
+    if (merged) {
+      unique_nodes = unique(c(agg$C_merged, agg$A_merged, agg$D,
+                              agg$S0_merged, agg$S1_merged, agg$S2_merged))
+    } else {
+      unique_nodes = unique(c(agg$C, agg$A, agg$D, agg$S0, agg$S1, agg$S2))
+    }
+  }
+  
+  edges = edges[!duplicated(edges %>% select(source, target)), ]
+  # edges %>% mutate(pair = paste(source, target))
+  
+  nodes = data.frame(
+    id = unique_nodes
+  )
+  lineclrs = c("#a7b7a8", "#b7a7a7")
+  # lineclrs = c("darkgreen", "darkred")
+  edge.col = lineclrs[edges$type_number]
+  
+  g1 <- graph_from_data_frame(d=edges, vertices=nodes, directed=T)
+  E(g1)$width <- 1+E(g1)$strength*5
+  
+  silent = png(paste("graphs/graph_aggregate_", disease, ifelse(merged, "_merged", ""), ".png", sep=""),
+               width=1000, height=1000)
+  
+  h = plot(g1, edge.arrow.size=.7, vertex.size=2,
+           edge.color = edge.col,
+           vertex.frame.color="gray", vertex.label.color="black",
+           vertex.label.cex=0.8, vertex.label.dist=0.1,
+           layout=layout.mds
+           )
+  silent = dev.off()
+  
+#   add_layout_ to add the layout to the graph as an attribute.
+# 
+# Other graph layouts: add_layout_; as_bipartite; layout.star; layout_as_tree; layout_in_circle; layout.auto, layout.davidson.harel; layout.gem; layout.graphopt; layout.grid; layout.mds; layout_components; layout_on_sphere; layout_randomly; layout_with_fr; layout_with_kk; layout_with_lgl;
+}
+```
+
+```{r}
+draw_illness_graph("a cold", T)
+draw_illness_graph("a cold", F)
+draw_illness_graph("depression", T)
+draw_illness_graph("depression", F)
+draw_illness_graph("cancer", T)
+draw_illness_graph("cancer", F)
+draw_illness_graph("diabetes", T)
+draw_illness_graph("diabetes", F)
+draw_illness_graph(F, T)
+draw_illness_graph(F, F)
+```
+
+
+Next, represent each disease as a vector of its possible symptoms, causes, and treatments.
+
+```{r}
+threshold = 0
+dimensions = (function() {
+  treatments = names(table(agg$A)[table(agg$A)>threshold])
+  causes = names(table(agg$C)[table(agg$C)>threshold])
+  all_symptoms = with(agg, c(S0, S1, S2, S3))
+  symptoms = names(table(all_symptoms)[table(all_symptoms)>threshold])
+  symptoms = symptoms[symptoms!="other"]
+  return(data.frame(
+    dimname = c(treatments, causes, symptoms),
+    dimtype = c(rep("A", length(treatments)),
+                rep("C", length(causes)),
+                rep("S", length(symptoms)))
+  ))
+})()
+
+diseases = unique(agg$D)
+vectors = do.call(rbind, lapply(diseases, function(disease) {
+  vector = (dimensions %>% mutate(count = mapply(function(dimname, dimtype) {
+    if (dimtype=="S") {
+      candidates = c((agg %>% filter(D==disease))$S0,
+                     (agg %>% filter(D==disease))$S1,
+                     (agg %>% filter(D==disease))$S2,
+                     (agg %>% filter(D==disease))$S3)
+    } else {
+      candidates = (agg %>% filter(D==disease))[[dimtype]]
+    }
+    return(sum(candidates==dimname))
+  }, char(dimname), char(dimtype))))$count
+  return((vector+0.001)/sum(vector+0.001))
+  # return(vector)
+}) %>% as.data.frame)
+colnames(vectors) = with(dimensions, paste(dimname, dimtype))
+rownames(vectors) = char(diseases)
+vectors = vectors %>% as.data.frame %>% mutate(diseases = diseases)
+vectors = vectors %>% filter(!is.nan(`sleep S`))
+row.names(vectors) = vectors$diseases
+vectors = vectors %>% select(-diseases)
+```
+
+Now that we have the diseases vectorized, we can make some plots.
+
+dendrogram
+```{r}
+d = dist(vectors, method="cosine")
+png("graphs/dendrogram.png", width=900, height=600)
+plot(hclust(d, method="single"))
+dev.off()
+```
+
+similarity matrix (euclidean distance)
+```{r}
+expand.grid(diseases, diseases) %>%
+  mutate(distance = mapply(function(v1, v2) {
+    return(as.matrix(d)[v1, v2])
+  }, Var1, Var2)) %>%
+  ggplot(., aes(x=Var1, y=Var2, fill=distance)) +
+  geom_tile() +
+  xlab("") +
+  theme(axis.text.x=element_text(angle = -90, hjust = 0)) +
+  geom_text(aes(label=ifelse( round(distance,2)%in%c(0,1), "", round(distance,2))), size=3, colour="black") +
+  scale_fill_gradient(low="yellow", high="darkblue") +
+  ylab("")
+ggsave("graphs/similarity.png", width=9, height=6)
+```
+
+
+## Aggregate with no manual merging
+
+```{r}
+agg = read.csv("../data/pilot_disease_whybot_2017_04_10_wide_form.csv") %>%
+  mutate(A = char(A), C = char(C), D = char(D), S0 = char(S0), S1 = char(S1),
+         S2 = char(S2))
+
+edges = data.frame(
+  source = c(agg$C, agg$A,  agg$D,  agg$D,  agg$D),
+  target = c(agg$D, agg$D, agg$S0, agg$S1, agg$S2),
+  strength = 1,
+  type = rep(c("cause", "prevent", "cause", "cause", "cause"), each=nrow(agg))
+) %>% mutate(type_number = as.numeric(factor(type)))
+
+unique_nodes = unique(c(agg$C, agg$A, agg$D, agg$S0, agg$S1, agg$S2))
+nodes = data.frame(
+  id = unique_nodes
+)
+  lineclrs = c("#a7b7a8", "#b7a7a7")
+  edge.col = lineclrs[edges$type_number]
+
+  g1 <- graph_from_data_frame(d=edges, vertices=nodes, directed=T)
+  
+  silent = png(paste("graphs/graph_aggregate_auto.png", sep=""),
+               width=1000, height=1000)
+  
+  h = plot(g1, edge.arrow.size=.1, vertex.size=2,
+           edge.color = edge.col,
+           vertex.frame.color="gray", vertex.label.color="black",
+           vertex.label.cex=0.8, vertex.label.dist=0.1,
+           layout=layout.auto
+           )
+  silent = dev.off()
+  
+#   add_layout_ to add the layout to the graph as an attribute.
+# 
+# Other graph layouts: add_layout_; as_bipartite; layout.star; layout_as_tree; layout_in_circle; layout.auto, layout.davidson.harel; layout.gem; layout.graphopt; layout.grid; layout.mds; layout_components; layout_on_sphere; layout_randomly; layout_with_fr; layout_with_kk; layout_with_lgl;
+```
+
+Next, represent each disease as a vector of its possible symptoms, causes, and treatments.
+
+```{r}
+threshold = 0
+dimensions = (function() {
+  treatments = names(table(agg$A)[table(agg$A)>threshold])
+  causes = names(table(agg$C)[table(agg$C)>threshold])
+  all_symptoms = with(agg, c(S0, S1, S2))
+  symptoms = names(table(all_symptoms)[table(all_symptoms)>threshold])
+  symptoms = symptoms[symptoms!="other"]
+  return(data.frame(
+    dimname = c(treatments, causes, symptoms),
+    dimtype = c(rep("A", length(treatments)),
+                rep("C", length(causes)),
+                rep("S", length(symptoms)))
+  ))
+})()
+
+diseases = unique(agg$D)
+vectors = do.call(rbind, lapply(diseases, function(disease) {
+  vector = (dimensions %>% mutate(count = mapply(function(dimname, dimtype) {
+    if (dimtype=="S") {
+      candidates = c((agg %>% filter(D==disease))$S0,
+                     (agg %>% filter(D==disease))$S1,
+                     (agg %>% filter(D==disease))$S2,
+                     (agg %>% filter(D==disease))$S3)
+    } else {
+      candidates = (agg %>% filter(D==disease))[[dimtype]]
+    }
+    return(sum(candidates==dimname))
+  }, char(dimname), char(dimtype))))$count
+  return((vector+0.001)/sum(vector+0.001))
+  # return(vector)
+}) %>% as.data.frame)
+colnames(vectors) = with(dimensions, paste(dimname, dimtype))
+rownames(vectors) = char(diseases)
+vectors = vectors %>% as.data.frame %>% mutate(diseases = diseases)
+vectors = vectors %>% filter(!is.nan(`sleep S`))
+row.names(vectors) = vectors$diseases
+vectors = vectors %>% select(-diseases)
+```
+
+Now that we have the diseases vectorized, we can make some plots.
+
+dendrogram
+```{r}
+d = dist(vectors, method="cosine")
+plot(hclust(d, method="single"))
+```
+
+similarity matrix (euclidean distance)
+```{r}
+expand.grid(diseases, diseases) %>%
+  mutate(distance = mapply(function(v1, v2) {
+    return(as.matrix(d)[v1, v2])
+  }, Var1, Var2)) %>%
+  ggplot(., aes(x=Var1, y=Var2, fill=distance)) +
+  geom_tile() +
+  xlab("") +
+  theme(axis.text.x=element_text(angle = -90, hjust = 0)) +
+  geom_text(aes(label=ifelse( round(distance,2)%in%c(0,1), "", round(distance,2))), size=3, colour="black") +
+  scale_fill_gradient(low="yellow", high="darkblue") +
+  ylab("")
+ggsave("graphs/similarity.png", width=9, height=6)
+```
+
+-->
+
+
+
+
+
+
+
+
+
+
+
+
