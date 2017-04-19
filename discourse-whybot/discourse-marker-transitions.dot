@@ -1,0 +1,211 @@
+digraph {
+   rankdir=LR 
+	start -> "Y because X", "Because Y, X",
+			 "Y and then X", "Before Y, X",
+			 "Y, even though X", "Even though Y, X",
+			 "Y. That is, X", "Y. Similarly, X"
+    "Y because X" -> "Y because X" [label="X→Y"]
+    "Because Y, X" -> "Because Y, X" [label="X→Y"]
+    "Y and then X" -> "Y and then X" [label="X→Y"]
+    "Before Y, X" -> "Before Y, X" [label="X→Y"]
+    "Y, even though X" -> "Y because X" [label="U→Y"]
+    "Even though Y, X" -> "Y because X" [label="U→Y"]
+    "Y. That is, X"
+    "Y because X" -> "Z and X" [label="U→Z"]
+    "Y because X" -> 
+    	"Z, and also because X" [label="U→Z"]
+    "Because Y, X" -> 
+    	"Z. And also, because Y, X" [label="U→Z;Y→Y"]
+    "Because Y, X" -> 
+    	"Z because Y and X" [label="X→Z;Y→Y"]
+    "Y because X" -> "Even though Y, X" [label="X→Y"]
+    "Because Y, X" -> "Even though Y, X" [label="X→Y"]
+    "Y and then X" -> "Even though Y, X" [label="X→Y"]
+    "Before Y, X" -> "Even though Y, X" [label="X→Y"]
+    "Y. Similarly, X" -> "Even though Y, X" [label="X→Y"]
+    "Even though Y, X" -> 
+    	"Even though Y, X" [label="X→Y"]
+    "Y, even though X" -> "Y, even though X" [label="X→Y"]
+    "Y because X" -> "Y. That is, X" [label="U→Y"]
+    "Because Y, X" -> "Y. That is, X" [label="U→Y"]
+    "Y and then X" -> "Y. That is, X" [label="U→Y"]
+    "Before Y, X" -> "Y. That is, X" [label="U→Y"]
+    "Y, even though X" -> "Y. That is, X" [label="U→Y"]
+    "Even though Y, X" -> "Y. That is, X" [label="U→Y"]
+    "Y. Similarly, X" -> "Y. That is, X" [label="U→Y"]
+    "Y because X" -> "Y. Similarly, X" [label="U→Y"]
+    "Because Y, X" -> "Y. Similarly, X" [label="U→Y"]
+    "Y and then X" -> "Y. Similarly, X" [label="U→Y"]
+    "Before Y, X" -> "Y. Similarly, X" [label="U→Y"]
+    "Y, even though X" -> "Y. Similarly, X" [label="U→Y"]
+    "Even though Y, X" -> "Y. Similarly, X" [label="U→Y"]
+    "Y. Similarly, X" -> "Y. Similarly, X" [label="U→Y"]
+    "Z. And also, because Y, X" -> "Because Y, X" [label="X→Y"]
+    "Z because Y and X" -> "Y because X" [label="X→Y"]
+    "Z and X" -> "Y because X" [label="X→Y"]
+    "Z, and also because X" -> 
+    	"Y because X" [label="X→Y"]
+    "Z and X" -> "Z and X" [label="U→Z"]
+    "Z, and also because X" -> "Z and X" [label="U→Z"]
+    "Z because Y and X" -> "Z and X" [label="X→Z"]
+    "Z and X" -> "Z, and also because X" [label="U→Z"]
+    "Z, and also because X" -> "Z, and also because X" [label="U→Z"]
+    "Z because Y and X" -> "Z, and also because X" [label="X→Z"]
+    "Y and then X" -> "Y because X" [label="X→Y"]
+    "Y and then X" -> "Because Y, X" [label="X→Y"]
+    "Y and then X" -> "Even though Y, X" [label="X→Y"]
+    "Y and then X" -> "Y, even though X" [label="X→Y"]
+    "Y and then X" -> "Y. That is, X" [label="X→Y"]
+}
+
+/*
+# layer 1
+
+## explanation
+
+* The girl held her hair above her head because __she wanted to go on the ride__.
+* Because the girl held her hair above her head, __the man frowned__.
+
+## narration/occasion
+
+* The girl held her hair above her head and then __the man pointed her to kiddie land__.
+* Before the girl held her hair above her head, __she made puppy eyes at the man__.
+
+## contrast
+
+* The girl held her hair above her head, even though __that won't actually make her tall enough to go on the ride__.
+* Even though the girl held her hair above her head, __the man still wouldn't let her go on the ride__.
+
+## elaboration
+
+* The girl held her hair above her head. That is, __she pulled on her pony tails and stood on her tip-toes__.
+
+## parallel
+
+* The girl held her hair above her head. Similarly, __she put on a tall hat__.
+
+# layer 2
+
+## explanation
+
+* Because the girl held her hair above her head, the man frowned. Because the man frowned, __the girl knew she had to try a new strategy__.
+* The man frowned because the girl held her hair above her head __and he wasn't in a very humoring mood__.
+* Because the girl held her hair above her head, the man frowned. And also, because the girl held her hair above her head, __he smiled a little bit__.
+* The girl held her hair above her head because she wanted to go on the ride. She wanted to go on the ride because __rides are fun__.
+* The girl held her hair above her head because she wanted to go on the ride and __she thought that would make her tall enough__.
+* The girl held her hair above her head because she wanted to go on the ride, and also because __she is silly__.
+* Even though the girl held her hair above her head, the man still wouldn't let her go on the ride because __she's not tall enough__.
+* The girl held her hair above her head even though that won't actually make her tall enough to go on the ride because __she thought it might count__.
+
+## narration/occasion
+
+* The girl held her hair above her head and then the man pointed her to kiddie land. And then __the girl made an angry face at him__.
+* Before the girl held her hair above her head, she made puppy eyes at the man. Before she made puppy eyes at the man, __the man pointed to the sign__.
+
+## contrast
+
+* The girl held her hair above her head because she wanted to go on the ride. Even though she wanted to go on the ride, __the man wouldn't let her__.
+* Because the girl held her hair above her head, the man frowned. Even though the man frowned, __he smiled just a little bit__.
+* The girl held her hair above her head and then the man pointed her to kiddie land. Even though the man pointed her to kiddie land, she didn't go.
+* Before the girl held her hair above her head, she made puppy eyes at the man. Even though she made puppy eyes at the man, __he didn't let her go on the ride__.
+* The girl held her hair above her head. Similarly, she put on a tall hat. Even though she put on a tall hat, __she still wasn't tall enough to get on the ride__.
+* Even though the girl held her hair above her head, the man still wouldn't let her go on the ride. Even though the man still wouldn't let her go on the ride, __she didn't give up__.
+* The girl held her hair above her head even though that won't actually make her tall enough to go on the ride. That won't actually make her tall enough to go on the ride, even though __it does technically make a part of her reach the requisite height__.
+
+questionable contrast continuations (do not include in graph):
+
+* The girl held her hair above her head even though that won't actually make her tall enough to go on the ride. Even though that won't actually maker her tall enough to go on the ride, __it's kind of a cute idea__.
+* Even though the girl held her hair above her head, the man still wouldn't let her go on the ride. The man still wouldn't let her go on the ride, __even though she wanted to go on the ride__.
+
+elaboration
+
+* The girl held her hair above her head because she wanted to go on the ride. That is, __she did what she could to solve an unsolvable problem__.
+* Because the girl held her hair above her head, the man frowned. That is, __he wasn't swayed by her attempt__.
+* The girl held her hair above her head and then the man pointed her to kiddie land. That is, __he wanted her to go to the little kid's area__.
+* Before the girl held her hair above her head, she made puppy eyes at the man. That is, __she was sad and she wanted him take pity on her and let her onto the ride__.
+* The girl held her hair above her head, even though that won't actually make her tall enough to go on the ride. That is, __she's making a bootless effort__.
+* Even though the girl held her hair above her head, the man still wouldn't let her go on the ride. That is, __her solution didn't work__.
+* The girl held her hair above her head. Similarly, she put on a tall hat. That is, __she's trying creative ways to make herself taller__.
+
+parallel
+
+* Before the girl held her hair above her head, she made puppy eyes at the man. Similarly, __before she smirked, she made an angry face__.
+* The girl held her hair above her head. Similarly, she put on a tall hat. Similarly, __she stood on popcorn shoes__.
+* The girl held her hair above her head because she wanted to go on the ride. Similarly, __she wore a tall hat__.
+* Because the girl held her hair above her head, the man frowned. Similarly, __he looked kind of angry when he stopped her from going on the ride__.
+* The girl held her hair above her head and then the man pointed her to kiddie land. Similarly, __she wore the giraffe hat and then he took it away__.
+* The girl held her hair above her head, even though that won't actually make her tall enough to go on the ride. Similarly, __she tried the giraffe hat and the popcorn shoes__.
+* Even though the girl held her hair above her head, __the man still wouldn't let her go on the ride__. Similarly, __he didn't let her on with the giraffe hat or the popcorn shoes either__.
+
+# layer 3
+
+## explanation
+
+### Because Y, X
+
+* Because the girl held her hair above her head, the man frowned. Because the man frowned, the girl knew she had to try a new strategy. Because the girl knew she had to try a new strategy, __she went to get a tall hat__.
+* Because the girl held her hair above her head, the man frowned. And also, because the girl held her hair above her head, he smiled a little bit. Because he smiled a little bit, __he maybe isn't that humorless__.
+
+### Y because X
+
+#### Y because X
+* The girl held her hair above her head because she wanted to go on the ride. She wanted to go on the ride because rides are fun. Rides are fun because __they are fast and exciting__.
+* Even though the girl held her hair above her head, the man still wouldn't let her go on the ride because she's not tall enough. She's not tall enough because __she is a kid__.
+* The girl held her hair above her head even though that won't actually make her tall enough to go on the ride because she thought it might count. She thought it might count because __technically a part of her is above the height requirement on the sign__.
+* The man frowned because the girl held her hair above her head and he wasn't in a very humoring mood. He wasn't in a very humoring mood because __he gets kids coming up to him and trying to get on the rides all day__.
+
+#### Y, even though X
+
+* The girl held her hair above her head even though that won't actually make her tall enough to go on the ride. That won't actually make her tall enough to go on the ride, even though it does technically make a part of her reach the requisite height. It does technically make a part of her reach the requisite height because __her hair is technically a part of her__.
+
+#### Even though Y, X
+
+* The girl held her hair above her head because she wanted to go on the ride. Even though she wanted to go on the ride, the man wouldn't let her. The man wouldn't let her because __she's too short__.
+* Because the girl held her hair above her head, the man frowned. Even though the man frowned, he smiled just a little bit. He smiled just a little bit because __she is cute__.
+* The girl held her hair above her head and then the man pointed her to kiddie land. Even though the man pointed her to kiddie land, she didn't go. She didn't go because __kiddie land is boring__.
+* Before the girl held her hair above her head, she made puppy eyes at the man. Even though she made puppy eyes at the man, he didn't let her go on the ride. He didn't let her go on the ride because __he would get fired__.
+* The girl held her hair above her head. Similarly, she put on a tall hat. Even though she put on a tall hat, she still wasn't tall enough to get on the ride. She still wasn't tall enough to get on the ride because __hair doesn't count__.
+* Even though the girl held her hair above her head, the man still wouldn't let her go on the ride. Even though the man still wouldn't let her go on the ride, she didn't give up. She didn't give up because __she is tenacious__.
+
+#### Z, and also because X
+
+* The girl held her hair above her head because she wanted to go on the ride, and also because she is silly. She is silly because __she is a kid__.
+
+#### Z and X
+* The girl held her hair above her head because she wanted to go on the ride and she thought that would make her tall enough. She thought that would make her tall enough because __technically a part of her is above the height requirement on the sign__.
+
+### Z and X
+
+* The man frowned because the girl held her hair above her head and he wasn't in a very humoring mood and __it's his job to tell kids "no"__.
+* The girl held her hair above her head because she wanted to go on the ride. She wanted to go on the ride because rides are fun and __she wants to be a big kid__.
+* The girl held her hair above her head because she wanted to go on the ride and she thought that would make her tall enough and __it was worth a try__.
+* The girl held her hair above her head because she wanted to go on the ride, and also because she is silly and __doesn't know any better__.
+* Even though the girl held her hair above her head, the man still wouldn't let her go on the ride because she's not tall enough and __it's dangerous__.
+* The girl held her hair above her head even though that won't actually make her tall enough to go on the ride because she thought it might count and __it's worth a try__.
+* Because the girl held her hair above her head, the man frowned. The girl knew she had to try a new strategy because the man frowned and __wouldn't let her on the ride__.
+* Because the girl held her hair above her head, the man frowned. But also, he smiled a little bit because the girl held her hair above her head and __that's kind of cute__.
+
+### Z, and also because X
+
+* The man frowned because the girl held her hair above her head and he wasn't in a very humoring mood, and also because __kids are annoying__.
+* The girl held her hair above her head because she wanted to go on the ride. She wanted to go on the ride because rides are fun, and also because __she's never been on a big ride before__.
+* The girl held her hair above her head because she wanted to go on the ride and she thought that would make her tall enough, and also because __she's a goof__.
+* The girl held her hair above her head because she wanted to go on the ride, and also because she is silly, and also because __it's a cartoon__.
+* Even though the girl held her hair above her head, the man still wouldn't let her go on the ride because she's not tall enough, and also because __of liability issues__.
+* The girl held her hair above her head even though that won't actually make her tall enough to go on the ride because she thought it might count, and also because __it's a cartoon__.
+
+### Z because Y and X
+
+Because the girl held her hair above her head, the man frowned. The girl knew she had to try a new strategy because the man frowned and __he's in charge__.
+
+### Z, And also, because Y, X
+
+* Because the girl held her hair above her head, the man frowned. Because the man frowned, the girl knew she had to try a new strategy. And also, because the man frowned, __she probably doesn't like him__.
+* Because the girl held her hair above her head, the man frowned. And also, because the girl held her hair above her head, he smiled a little bit. And also, because the girl held her hair above her head, __we can tell she's silly__.
+
+narration/occasion
+contrast
+elaboration
+parallel
+
+*/
