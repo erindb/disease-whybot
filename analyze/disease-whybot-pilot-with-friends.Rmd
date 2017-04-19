@@ -20,7 +20,10 @@ library(igraph)
 ```
 
 ```{r}
-df = read.csv("../data/processed_data_disease_whybot_0.csv")
+df0 = read.csv("../data/processed_data_disease_whybot_0.csv")
+df1 = read.csv("../data/processed_data_disease_whybot_1.csv")
+df2 = read.csv("../data/processed_data_disease_whybot_2.csv")
+df = df2
 ```
 
 Here are pilot participants' comments on the experiment:
@@ -43,14 +46,14 @@ In general, enough people felt silly or dumb while filling this out that I think
 demogragphics = df %>% group_by(userid) %>%
   summarise(enjoyment = subject_information.enjoyment,
             assess = subject_information.assess)
-# demogragphics %>%
-#   ggplot(., aes(x=enjoyment)) +
-#   geom_bar() +
-#   ggtitle("enjoyment")
-# demogragphics %>%
-#   ggplot(., aes(x=assess)) +
-#   geom_bar() +
-#   ggtitle("assessment")
+demogragphics %>%
+  ggplot(., aes(x=enjoyment)) +
+  geom_bar() +
+  ggtitle("enjoyment")
+demogragphics %>%
+  ggplot(., aes(x=assess)) +
+  geom_bar() +
+  ggtitle("assessment")
 ```
 
 What diseases did people give?
@@ -154,29 +157,43 @@ df %>% ggplot(., aes(x=A, fill=treatment)) +
 df = df %>% mutate( C=char(C), D=char(D), Se=char(Se),
                     Sf=char(Sf), Ss=char(Ss), So=char(So),
                     A=char(A), R=char(R))
+df1 = df1 %>% mutate( C=char(C), D=char(D), Se=char(Se),
+                    Sf=char(Sf), Ss=char(Ss), So=char(So),
+                    A=char(A), R=char(R))
+df = df %>% mutate( C=char(C), D=char(D), S0=char(S0),
+                    S1=char(S1), S2=char(S2),
+                    A=char(A), R=char(R))
 ```
 
 ```{r}
 draw_edges = function(row) {
   data.frame(
-    source=c(row$C, row$D, row$A,
+    source=c(row$C, #row$D, 
+             row$A,
              row$D, row$D, row$D,
-             ".",
+             #".",
              ".", ".", ".",
              row$R),
-    target=c(row$D, row$Sf, row$D,
-             row$Se, row$So, row$Ss,
-             row$Sf,
-             row$Se, row$So, row$Ss,
+    target=c(row$D, #row$Sf, 
+             row$D,
+             # row$Se, row$So, row$Ss,
+             row$S0, row$S1, row$S2,
+             # row$Sf,
+             # row$Se, row$So, row$Ss,
+             row$S0, row$S1, row$S2,
              row$A),
-    strength=c(row$causeCD, row$causeDSf, row$mitigateAD,
-               row$causeDSe, row$causeDSo, row$causeDSs,
-               row$bSf,
-               row$bSe, row$bSo, row$bSs,
+    strength=c(row$causeCD/1000, #row$causeDSf/1000, 
+               row$mitigateAD/1000,
+               # row$causeDSe/1000, row$causeDSo/1000, row$causeDSs/1000,
+               row$causeDS0/1000, row$causeDS1/1000, row$causeDS2/1000,
+               # row$bSf/1000,
+               row$bS0/1000, row$bS1/1000, row$bS2/1000,
+               # row$bSe/1000, row$bSo/1000, row$bSs/1000,
                row$costA),
-    type=c("cause", "cause", "prevent",
+    type=c("cause", #"cause", 
+           "prevent",
            "cause", "cause", "cause",
-           "cause",
+           #"cause",
            "cause", "cause", "cause",
            "prevent")) %>%
     mutate(type_number = as.numeric(factor(type)))
@@ -186,11 +203,14 @@ draw_nodes = function(row) {
     id = c(row$R,
            row$A, row$C,
            row$D, ".",
-           row$Sf, row$Se, row$So, row$Ss),
+           row$S0, row$S1, row$S2#, row$Ss
+           # row$Sf, row$Se, row$So, row$Ss
+           ),
     type = c("reason",
              "cause", "cause", 
              "illness", "illness",
-             "symptom", "symptom", "symptom", "symptom")
+             "symptom", "symptom", "symptom"#, "symptom"
+             )
   ) %>%
     group_by(id) %>%
     summarise(type = type[[1]]) %>%
@@ -202,7 +222,7 @@ draw_graph = function(row) {
   edges = draw_edges(row)
   nodes = draw_nodes(row)
   g1 <- graph_from_data_frame(d=edges, vertices=nodes, directed=T) 
-  E(g1)$width <- 1+E(g1)$strength/1000*5
+  E(g1)$width <- 1+E(g1)$strength*5
   
   colrs <- c("lemonchiffon", "lightgreen", 
              "lightsteelblue", "lightcoral")
@@ -239,7 +259,8 @@ draw_graph = function(row) {
            edge.color = edge.col,
            vertex.frame.color="gray", vertex.label.color="black",
            vertex.label.cex=0.8, vertex.label.dist=0.8, edge.curved=0,
-           layout=l)
+           layout=l
+           )
   print(h)
 }
 ```
@@ -258,4 +279,10 @@ draw_graph(df[11,])
 draw_graph(df[12,])
 draw_graph(df[13,])
 draw_graph(df[14,])
+draw_graph(df1[1,])
 ```
+
+```{r}
+
+```
+
