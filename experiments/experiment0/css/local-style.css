@@ -79,14 +79,14 @@ button {
 
 .slide {
 	width: 800px;
-	height: 600px;
+	height: 640px;
 	border: solid black 1px;
 	position: relative;
 }
 
 .progress_wrapper {
 	position: absolute;
-	top: 560px;
+	top: 600px;
 	left: 20px;
 	background: white;
 	height: 30px;

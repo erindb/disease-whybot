@@ -3,7 +3,7 @@ var debug = function(string) {
   if (DEBUG) {console.log(string)};
 };
 
-var experiment_label = "disease_whybot_2";
+var experiment_label = "disease_whybot_3";
 // for data collection
 
 var QueryString = function () {
@@ -357,11 +357,15 @@ function parse_and_continue(datum_index, trial_data, final_callback) {
   var datum = trial_data[datum_index];
   var response = datum.response;
   var full_sentence = datum.before_text + response + datum.after_text;
+  console.log(full_sentence);
   get_nlp_data(
     response,
     full_sentence,
     function(response, status, parse) {
+      console.log(response);
+      console.log(parse);
       if (status=="success") {
+        console.log("post succeeded");
         var transformed_response = transform_to_3rd_plural(parse, response, datum.before_text);
         datum.transformed_response = transformed_response;
         datum.parse_error = false;
@@ -652,30 +656,37 @@ function make_slides(f) {
       var setup_interface;
       if (query_type=="text") {
         $(".prompt").html("Fill in the blank.");
-        setup_query = function() {
-          $(".query_wrapper").empty();
-          $(".query_wrapper").append(
-            $("<p/>", {class: "query"})
-          );
-          $(".query").append(spanify(
-            stim.before,
-            "before",
-            "before_" + stim.variable
-          ));
-          $(".query").append(
-            $(
-              "<input>",
-              {
-                id: "response",
-                type: "text"
-              }
-            ).attr('size',10)
-          );
-          $(".query").append(spanify(
-            stim.after,
-            "after",
-            "after_" + stim.variable
-          ));
+          setup_query = function() {
+            var response_element;
+            if (_s.stim.variable!="D") {
+              response_element = $(
+                "<input>",
+                {
+                  id: "response",
+                  type: "text"
+                }
+              ).attr('size',10);
+            } else {
+              response_element = $("<span>", {id: "response", text: exp.disease})
+            }
+            $(".query_wrapper").empty();
+            $(".query_wrapper").append(
+              $("<p/>", {class: "query"})
+            );
+            $(".query").append(spanify(
+              stim.before,
+              "before",
+              "before_" + stim.variable
+            ));
+            $(".query").append(response_element);
+            $(".query").append(spanify(
+              stim.after,
+              "after",
+              "after_" + stim.variable
+            ));
+          };
+        if (_s.stim.variable=="D") {
+          $(".prompt").html("Read the following sentence.");
         };
         setup_interface = function() {
           $("#response").focus();
@@ -687,9 +698,17 @@ function make_slides(f) {
         };
         setup_response_handlers = function() {
           _s.response_handlers[stim.variable] = function() {
-            var response = $("#response").val();
-            var feedback = $("#feedback").val();
-            exp.variables[stim.variable] = response;
+            var response;
+            var feedback;
+            if (_s.stim.variable=="D") {
+              response = exp.disease;
+              feedback = "NA";
+            } else {
+              response = $("#response").val();
+              feedback = $("#feedback").val();
+            }
+            console.log(response);
+            exp.variables[_s.stim.variable] = response;
             var is_valid = response.length > 0;
             return {
               response: response,
@@ -1052,6 +1071,7 @@ function make_slides(f) {
       var trial_data = [];
       _.forEach(_.keys(_s.response_handlers), function(variable) {
         var datum = _s.response_handlers[variable]();
+        console.log(datum);
         if (datum.is_valid==false) {is_valid=false};
         datum = _.extend(_.clone(_s.stim), datum);
         datum = _.extend(_.clone(datum), {
@@ -1152,15 +1172,15 @@ function make_slides(f) {
 /// init ///
 function init() {
 
-  // repeatWorker = false;
-  // (function(){
-  //     var ut_id = "erindb-explanation-20160619";
-  //     if (UTWorkerLimitReached(ut_id)) {
-  //       $('.slide').empty();
-  //       repeatWorker = true;
-  //       alert("You have already completed the maximum number of HITs allowed by this requester. Please click 'Return HIT' to avoid any impact on your approval rating.");
-  //     }
-  // })();
+  repeatWorker = false;
+  (function(){
+      var ut_id = "erindb-whybot-20170413";
+      if (UTWorkerLimitReached(ut_id)) {
+        $('.slide').empty();
+        repeatWorker = true;
+        alert("You have already completed the maximum number of HITs allowed by this requester. Please click 'Return HIT' to avoid any impact on your approval rating.");
+      }
+  })();
 
   $('input[type="text"]')
     // event handler
@@ -1186,6 +1206,8 @@ function init() {
     screenW: screen.width,
     screenUW: exp.width
   };
+
+  exp.disease = _.sample(["a cold", "cancer", "depression", "diabetes"]);
 
   exp.structure = [
     "i0",
