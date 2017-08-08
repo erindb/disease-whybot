@@ -2,6 +2,7 @@
 
 """
 
+<<<<<<< HEAD
 Server will use this script to transform a corenlp parse of a
 user response to components:
 
@@ -524,3 +525,12 @@ sentence_obj = Sentence(parse["sentences"][0], sentence)
 print(sentence_obj)
 print(sentence_obj.token(5))
 print(sentence_obj.token(3))
+
+"""
+There is a sym link to this file. This file exports a single function:
+
+process_parsed_data
+
+def process_parsed_data(parse):
+  return "hello"
+"""
