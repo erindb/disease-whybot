@@ -77,21 +77,39 @@ var valid_numeric_response = function(response) {
 var collect_response = function() {};
 
 var irregular_verbs = {
-  does: "do",
-  is: "are",
-  has: "have",
-  was: "were",
-  "'s": "'re",
-  "doesn't": "don't",
-  "isn't": "aren't",
-  "hasn't": "haven't",
-  "wasn't": "weren't"
+  "does": "doesn't",
+  "did": "didn't",
+  "is": "isn't",
+  "was": "wasn't",
+  "has": "hasn't",
+  "can": "cannot",
+  "should": "shouldn't",
+  "would": "wouldn't",
+  "might": "might not",
+  "must": "doesn't have to",
+  "will": "won't",
+  "could": "couldn't",
+  "may": "can't",
+  "'s": " isn't"
 };
 var irregular_verbs_list = Object.keys(irregular_verbs);
 
-var isTheyPron = function(word) {
-  return (word.match(/s?he/i) || word==exp.variables.name);
-};
+// var irregular_verbs = {
+//   does: "do",
+//   is: "are",
+//   has: "have",
+//   was: "were",
+//   "'s": "'re",
+//   "doesn't": "don't",
+//   "isn't": "aren't",
+//   "hasn't": "haven't",
+//   "wasn't": "weren't"
+// };
+// var irregular_verbs_list = Object.keys(irregular_verbs);
+
+// var isTheyPron = function(word) {
+//   return (word.match(/s?he/i) || word==exp.variables.name);
+// };
 
 var names = _.shuffle([
   "Pat", "Sam", "Taylor", "Alex", "Eli",
@@ -122,7 +140,7 @@ var sample_protagonist = function() {
   exp.variables.HHe = capitalizeFirstLetter(exp.variables.he);
   exp.variables.HHim = capitalizeFirstLetter(exp.variables.him);
   exp.variables.HHis = capitalizeFirstLetter(exp.variables.his);
- };
+};
 
 var index = function(s) {
   return parseInt(s)-1;
@@ -209,66 +227,66 @@ var find_subject_dependency = function(dependencies, token, tokens) {
   }
 };
 
-var has_they_subject = function(dependencies, token, tokens) {
-  // here's an even harder version. sometimes we have to
-  // deal with conjunctions.
+// var has_they_subject = function(dependencies, token, tokens) {
+//   // here's an even harder version. sometimes we have to
+//   // deal with conjunctions.
 
-  // some verbs are aux or cop and their connection
-  // to their subject is via some root predicate
-  var main_predicate = find_main_predicate(dependencies, token, tokens);
-  var subject_dependency = find_subject_dependency(
-    dependencies,
-    main_predicate,
-    tokens
-  );
-  if (subject_dependency) {
-    var subject_index = index(subject_dependency.dependent);
-    return isTheyPron(tokens[subject_index].word);
-  }
-  return false;
-};
+//   // some verbs are aux or cop and their connection
+//   // to their subject is via some root predicate
+//   var main_predicate = find_main_predicate(dependencies, token, tokens);
+//   var subject_dependency = find_subject_dependency(
+//     dependencies,
+//     main_predicate,
+//     tokens
+//   );
+//   if (subject_dependency) {
+//     var subject_index = index(subject_dependency.dependent);
+//     return isTheyPron(tokens[subject_index].word);
+//   }
+//   return false;
+// };
 
-var replace_verbs = function(sentence) {
-  var dependencies = sentence["basicDependencies"];
-  var tokens = sentence.tokens;
+// var replace_verbs = function(sentence) {
+//   var dependencies = sentence["basicDependencies"];
+//   var tokens = sentence.tokens;
 
-  // filter to only verbs
-  var all_verbs = tokens.filter(function(token) {
-    return token.pos[0]=="V"
-  });
+//   // filter to only verbs
+//   var all_verbs = tokens.filter(function(token) {
+//     return token.pos[0]=="V"
+//   });
 
-  var verbs_to_replace = [];
+//   var verbs_to_replace = [];
 
-  // extract verbs with (s)he as subject
-  for (var v=0; v<all_verbs.length; v++) {
-    var token = all_verbs[v];
-    // find the subject of each verb by looking in the dependency parse
-    if (has_they_subject(dependencies, token, tokens)) {
-      verbs_to_replace.push(token);
-    };
-  }
+//   // extract verbs with (s)he as subject
+//   for (var v=0; v<all_verbs.length; v++) {
+//     var token = all_verbs[v];
+//     // find the subject of each verb by looking in the dependency parse
+//     if (has_they_subject(dependencies, token, tokens)) {
+//       verbs_to_replace.push(token);
+//     };
+//   }
 
-  var new_tokens = tokens;
-  for (var v=0; v<verbs_to_replace.length; v++) {
-    var verb_to_replace = verbs_to_replace[v];
-    var token_index = index(verb_to_replace.index);
-    new_tokens[token_index].new_text = transform_verb(
-      verb_to_replace.originalText
-    );
-  }
+//   var new_tokens = tokens;
+//   for (var v=0; v<verbs_to_replace.length; v++) {
+//     var verb_to_replace = verbs_to_replace[v];
+//     var token_index = index(verb_to_replace.index);
+//     new_tokens[token_index].new_text = transform_verb(
+//       verb_to_replace.originalText
+//     );
+//   }
 
-  return {
-    basicDependencies: dependencies,
-    tokens: new_tokens
-  }
-};
+//   return {
+//     basicDependencies: dependencies,
+//     tokens: new_tokens
+//   }
+// };
 
 // ------------ PRONOUNS ------------
 var easy_pronouns = {
-  she: "they",
-  he: "they",
-  him: "them",
-  his: "their"
+  she: "<span class='he'>{{}}</span>",
+  he: "<span class='he'>{{}}</span>",
+  him: "<span class='him'>{{}}</span>",
+  his: "<span class='his'>{{}}</span>"
 };
 var replace_pronouns = function(sentence) {
   // response = response.replace(/\bs?he\b/gi, "they");
@@ -285,10 +303,10 @@ var replace_pronouns = function(sentence) {
       if (text == "her") {
         var pos = token.pos;
         if (pos == "PRP$") {
-          token.new_text = "their";
+          token.new_text = "<span class='his'>{{}}</span>";
           return token;
         } else if (pos=="PRP") {
-          token.new_text = "them";
+          token.new_text = "<span class='him'>{{}}</span>";
           return token;
         } else {
           console.log("warning 239847");
@@ -314,38 +332,38 @@ var replace_pronouns = function(sentence) {
     return {tokens: tokens, basicDependencies: dependencies};
 };
 
-var transform_to_3rd_plural = function(parse, response, before) {
-  var sentences = parse.sentences;
+// var transform_to_3rd_plural = function(parse, response, before) {
+//   var sentences = parse.sentences;
 
-  var verbs_are_replaced = _.map(sentences, replace_verbs);
-  var everything_replaced = _.map(verbs_are_replaced, replace_pronouns);
+//   var verbs_are_replaced = _.map(sentences, replace_verbs);
+//   var everything_replaced = _.map(verbs_are_replaced, replace_pronouns);
 
-  var make_sentence_strings = function(sentence) {
-    var tokens = sentence.tokens;
+//   var make_sentence_strings = function(sentence) {
+//     var tokens = sentence.tokens;
 
-    var new_words = tokens.map(function(token) {
-      if (token.new_text) {
-        return token.before + token.new_text;
-      } else {
-        return token.before + token.originalText;
-      }
-    });
+//     var new_words = tokens.map(function(token) {
+//       if (token.new_text) {
+//         return token.before + token.new_text;
+//       } else {
+//         return token.before + token.originalText;
+//       }
+//     });
 
-    return new_words.join("");
-  };
+//     return new_words.join("");
+//   };
 
-  var full_sentence = everything_replaced.map(make_sentence_strings).join("");
+//   var full_sentence = everything_replaced.map(make_sentence_strings).join("");
 
-  var n_words_response = response.split(" ").length;
-  before = before.replace(/ $/, "");
-  var n_words_before = before.split(" ").length;
-  var all_words = full_sentence.split(" ");
-  var response_words = all_words.slice(n_words_before, n_words_before+n_words_response);
-  response = response_words.join(" ");
-  response = response.replace(/[.,]$/, "");
+//   var n_words_response = response.split(" ").length;
+//   before = before.replace(/ $/, "");
+//   var n_words_before = before.split(" ").length;
+//   var all_words = full_sentence.split(" ");
+//   var response_words = all_words.slice(n_words_before, n_words_before+n_words_response);
+//   response = response_words.join(" ");
+//   response = response.replace(/[.,]$/, "");
 
-  return response;
-};
+//   return response;
+// };
 
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -397,17 +415,20 @@ function parse_and_continue(datum_index, trial_data, final_callback) {
       // console.log(parse);
       if (status=="success") {
         console.log("post succeeded");
-        var transformed_response = transform_to_3rd_plural(parse, response, datum.before_text);
-        datum.transformed_response = transformed_response;
+        // var transformed_response = transform_to_3rd_plural(parse, response, datum.before_text);
+        // datum.transformed_response = transformed_response;
+        var negated_response = negate(response, parse, datum.before_text);
         datum.parse_error = false;
       } else if (status=="failure") {
         console.log("post failed");
-        datum.transformed_response = response;
+        // datum.transformed_response = response;
+        datum.negated_response = negate(response);
         datum.parse_error = true;
       } else {
         console.log("error -21938409238r");
       }
-      exp.variables[datum.variable + "_transformed_to_they"] = datum.transformed_response;
+      // exp.variables[datum.variable + "_transformed_to_they"] = datum.transformed_response;
+      exp.variables["negated_" + datum.variable] = datum.negated_response
       // now we have the transformed response,
       // or some stand-in, for one more response
       // and we have converted all_data accordingly.
@@ -424,9 +445,111 @@ function parse_and_continue(datum_index, trial_data, final_callback) {
   );
 };
 
-function negate(x) {
-	// placeholder code
-	return "NOT(" + x + ")"
+var negate_main_verb = function(sentence) {
+  var dependencies = sentence["basicDependencies"];
+  var tokens = sentence.tokens;
+
+  // use ROOT to find the head of the sentence
+  // 
+
+  // if there's a quantifier OFF THAT VERB,
+  // drop it and just make two version of the sentence
+
+  // negate the main verb
+
+  // var verbs_to_replace = [];
+  // // filter to only verbs
+  // var all_verbs = tokens.filter(function(token) {
+  //   return token.pos[0]=="V"
+  // });
+
+  // // extract verbs with (s)he as subject
+  // for (var v=0; v<all_verbs.length; v++) {
+  //   var token = all_verbs[v];
+  //   // find the subject of each verb by looking in the dependency parse
+  //   if (has_they_subject(dependencies, token, tokens)) {
+  //     verbs_to_replace.push(token);
+  //   };
+  // }
+
+  // var new_tokens = tokens;
+  // for (var v=0; v<verbs_to_replace.length; v++) {
+  //   var verb_to_replace = verbs_to_replace[v];
+  //   var token_index = index(verb_to_replace.index);
+  //   new_tokens[token_index].new_text = transform_verb(
+  //     verb_to_replace.originalText
+  //   );
+  // }
+
+  return {
+    basicDependencies: dependencies,
+    tokens: new_tokens
+  }}
+
+var negate = function(originalText, parse, before_text) {
+  var revisedText = originalText;
+  var quantifiers = [
+    "always", "never", "usually", "sometimes", "often",
+    "constantly", "frequently"
+  ];
+
+  if (parse==null) {
+    return "NOT(" + revisedText + ")";
+  } else {
+    var sentences = parse.sentences;
+
+// replace verbs
+    var negated_sentences = _.map(sentences, negate_main_verb);
+
+    var make_sentence_strings = function(sentence) {
+      var tokens = sentence.tokens;
+
+      var new_words = tokens.map(function(token) {
+        if (token.new_text) {
+          return token.before + token.new_text;
+        } else {
+          return token.before + token.originalText;
+        }
+      });
+
+      return new_words.join("");
+    };
+
+    var full_sentence = negated_sentences.map(make_sentence_strings).join("");
+
+    var n_words_response = response.split(" ").length;
+    before = before.replace(/ $/, "");
+    var n_words_before = before.split(" ").length;
+    var all_words = full_sentence.split(" ");
+    var response_words = all_words.slice(n_words_before, n_words_before+n_words_response);
+    response = response_words.join(" ");
+    response = response.replace(/[.,]$/, "");
+
+    return response;
+
+    // for (var i=0; i<quantifiers.length; i++) {
+    //   var quantifier = quantifiers[i];
+    //   revisedText = revisedText.replace(quantifier + " ", "");
+    //   revisedText = revisedText.replace(" " + quantifier, "");
+    // };
+
+    // var already_negated = False;
+    // var has_helper_verb = False;
+    // for (var i=0; i<irregular_verbs_list.length; i++) {
+    //   var irregular_verb = irregular_verbs_list[i];
+    //   var negated_form = irregular_verbs[irregular_verb];
+    //   if (revisedText.indexOf(irregular_verb) >= 0) {
+    //     has_helper_verb = True;
+    //   }
+    //   if (revisedText.indexOf(negated_form) >= 0) {
+    //     already_negated = True;
+    //   }
+    // }
+
+    // if (already_negated) {} else if (has_helper_verb) {} else {}
+
+    return "NOT(" + revisedText + ")";
+  }
 };
 
 var level0 = [
@@ -512,7 +635,7 @@ var level2 = [
     trial_level: 2,
     variable: "pCnC",
     before: (
-      span("name") + " " + negate(span("pC")) + " because " // placeholder 
+      span("name") + " " + span("negated_pC") + " because " // placeholder 
     ),
     after: ".",
     n_symptoms: "NA",
@@ -524,7 +647,7 @@ var level2 = [
     trial_level: 2,
     variable: "pCnR",
     before: (
-      "Because " + span("name") + " " + negate(span("pC")) + ", "
+      "Because " + span("name") + " " + span("negated_pC") + ", "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -548,7 +671,7 @@ var level2 = [
     trial_level: 2,
     variable: "nCnC",
     before: (
-      span("name") + " " +  negate(span("nC")) + " because " 
+      span("name") + " " +  span("negated_nC") + " because " 
     ),
     after: ".",
     n_symptoms: "NA",
@@ -573,7 +696,7 @@ var level2 = [
     trial_level: 2,
     variable: "pRnC",
     before: (
-      span("name") + " " +  negate(span("pR")) + " because "
+      span("name") + " " +  span("negated_pR") + " because "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -597,7 +720,7 @@ var level2 = [
     trial_level: 2,
     variable: "pRnR",
     before: (
-      "Because " + span("name") + " " +  negate(span("pR")) + ", "
+      "Because " + span("name") + " " +  span("negated_pR") + ", "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -633,7 +756,7 @@ var level2 = [
     trial_level: 2,
     variable: "nRnR",
     before: (
-      "Because " + span("name") + " " +  negate(span("nR")) + ", "
+      "Because " + span("name") + " " +  span("negated_nR") + ", "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -920,84 +1043,84 @@ function make_slides(f) {
             };
           };
         };
-      } else if (query_type=="symptom_frequency") {
-        setup_query = function() {
-          $(".prompt").html(stim.prompt);
-          $(".query_wrapper").empty();
-          exp.sliderPost = {};
-          $(".query_wrapper").append(
-            $("<div/>", {class: "symptom_wrapper"})
-          );
-          _.range(0, stim.n_symptoms).forEach(function(i) {
-            var variable_label = "S" + i;
-            $(".symptom_wrapper").append($(
-              "<p/>",
-              {
-                class: "symptom",
-                id: "symptom" + i,
-                text: (
-                  "... " +
-                  exp.variables[variable_label + "_transformed_to_they"] +
-                  " " +
-                  exp.variables[variable_label + "_adverb"] +
-                  "?"
-                )
-              }
-            ));
-            var slider_wrapper = $("<div/>", {
-              class: "slider_wrapper"
-            });
-            var left = $(
-              "<div/>",
-              {class: "left", text: "no one"}
-            );
-            var right = $(
-              "<div/>",
-              {class: "right", text: "everyone"}
-            );
-            var single_slider = $(
-              "<div/>",
-              {
-                class: "slider frequency_slider",
-                id: "frequency_slider" + i
-              }
-            );
-            slider_wrapper.append(left);
-            slider_wrapper.append(right);
-            slider_wrapper.append(single_slider);
+      // } else if (query_type=="symptom_frequency") {
+      //   setup_query = function() {
+      //     $(".prompt").html(stim.prompt);
+      //     $(".query_wrapper").empty();
+      //     exp.sliderPost = {};
+      //     $(".query_wrapper").append(
+      //       $("<div/>", {class: "symptom_wrapper"})
+      //     );
+      //     _.range(0, stim.n_symptoms).forEach(function(i) {
+      //       var variable_label = "S" + i;
+      //       $(".symptom_wrapper").append($(
+      //         "<p/>",
+      //         {
+      //           class: "symptom",
+      //           id: "symptom" + i,
+      //           text: (
+      //             "... " +
+      //             exp.variables[variable_label + "_transformed_to_they"] +
+      //             " " +
+      //             exp.variables[variable_label + "_adverb"] +
+      //             "?"
+      //           )
+      //         }
+      //       ));
+      //       var slider_wrapper = $("<div/>", {
+      //         class: "slider_wrapper"
+      //       });
+      //       var left = $(
+      //         "<div/>",
+      //         {class: "left", text: "no one"}
+      //       );
+      //       var right = $(
+      //         "<div/>",
+      //         {class: "right", text: "everyone"}
+      //       );
+      //       var single_slider = $(
+      //         "<div/>",
+      //         {
+      //           class: "slider frequency_slider",
+      //           id: "frequency_slider" + i
+      //         }
+      //       );
+      //       slider_wrapper.append(left);
+      //       slider_wrapper.append(right);
+      //       slider_wrapper.append(single_slider);
 
-            $(".symptom_wrapper").append(slider_wrapper);
+      //       $(".symptom_wrapper").append(slider_wrapper);
 
-            utils.make_slider(
-              "#frequency_slider" + i,
-              function(event, ui) {
-                exp.sliderPost[i] = ui.value;
-              },
-              "horizontal",
-              0.001,
-              400,
-              5
-            );
-          });
-        };
-        setup_interface = function() {};
-        setup_response_handlers = function() {
-          _.forEach(_.range(0, stim.n_symptoms), function(i) {
-            _s.response_handlers[_s.stim.variable + i] = function() {
-              var response = exp.sliderPost[i];
-              var feedback = $("#feedback").val();
-              var is_valid = response!=null;
-              return {
-                response: response,
-                is_valid: is_valid,
-                feedback: feedback,
-                secondary_response: "NA",
-                secondary_response_type: "NA",
-                variable: _s.stim.variable + i
-              };
-            };
-          });
-        };
+      //       utils.make_slider(
+      //         "#frequency_slider" + i,
+      //         function(event, ui) {
+      //           exp.sliderPost[i] = ui.value;
+      //         },
+      //         "horizontal",
+      //         0.001,
+      //         400,
+      //         5
+      //       );
+      //     });
+      //   };
+      //   setup_interface = function() {};
+      //   setup_response_handlers = function() {
+      //     _.forEach(_.range(0, stim.n_symptoms), function(i) {
+      //       _s.response_handlers[_s.stim.variable + i] = function() {
+      //         var response = exp.sliderPost[i];
+      //         var feedback = $("#feedback").val();
+      //         var is_valid = response!=null;
+      //         return {
+      //           response: response,
+      //           is_valid: is_valid,
+      //           feedback: feedback,
+      //           secondary_response: "NA",
+      //           secondary_response_type: "NA",
+      //           variable: _s.stim.variable + i
+      //         };
+      //       };
+      //     });
+      //   };
       } else if (query_type=="difficulty") {
         $(".prompt").html(stim.prompt);
         setup_query = function() {
@@ -1135,7 +1258,8 @@ function make_slides(f) {
         if (datum.is_valid==false) {is_valid=false};
         datum = _.extend(_.clone(_s.stim), datum);
         datum = _.extend(_.clone(datum), {
-          transformed_response: "NA",
+          // transformed_response: "NA",
+          negated_response: "NA",
           parse_error: "NA",
           time: Date.now(),
           rt: _s.rt,
