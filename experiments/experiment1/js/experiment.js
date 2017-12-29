@@ -50,7 +50,7 @@ var get_nlp_data = function(response, full_sentence, callback) {
   $.ajax({
     type: "POST",
     url: 'https://' +
-      'rxdhawkins.me:400/' +
+      'rxdhawkins.me:8882/' +
       '?properties=' +
       properties_for_url,
     data: full_sentence,
