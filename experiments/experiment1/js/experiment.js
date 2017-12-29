@@ -93,6 +93,37 @@ var isTheyPron = function(word) {
   return (word.match(/s?he/i) || word==exp.variables.name);
 };
 
+var names = _.shuffle([
+  "Pat", "Sam", "Taylor", "Alex", "Eli",
+  "Jordan", "Drew", "Ash", "Chris", "Jess",
+  "Jo", "Nat", "Robin", "Sal", "Casey",
+  "Avery", "Jamie", "Madison", "Tracy",
+  // "Indigo", "Jackson", "Peyton", "Jayden"
+]);
+var pronouns = {
+  "men": {
+    "nominative": "he",
+    "accusative": "him",
+    "genitive": "his"
+  },
+  "women": {
+    "nominative": "she",
+    "accusative": "her",
+    "genitive": "her"
+  }
+};
+var sample_protagonist = function() {
+  exp.variables.name = names.pop();
+  var g = _.sample(["men", "women"]);
+  exp.variables.gender = g;
+  exp.variables.he = pronouns[g]["nominative"];
+  exp.variables.him = pronouns[g]["accusative"];
+  exp.variables.his = pronouns[g]["genitive"];
+  exp.variables.HHe = capitalizeFirstLetter(exp.variables.he);
+  exp.variables.HHim = capitalizeFirstLetter(exp.variables.him);
+  exp.variables.HHis = capitalizeFirstLetter(exp.variables.his);
+ };
+
 var index = function(s) {
   return parseInt(s)-1;
 };
@@ -676,6 +707,8 @@ function make_slides(f) {
       $("#skip_button").hide();
       $("#wrong").hide();
 
+      sample_protagonist();
+
       var query_type = stim.query_type;
 
       var setup_query;
@@ -1244,26 +1277,7 @@ function init() {
     "thanks"
   ];
 
-  var name = _.sample(["Pat", "Sam", "Taylor", "Alex", "Eli"]);
-  var gender = _.sample(["men", "women"]);
-
-  exp.variables = {
-    name: name,
-    gender: gender
-  };
-
-  if (gender == "men") {
-    exp.variables.him = "him";
-    exp.variables.he = "he";
-    exp.variables.his = "his";
-  } else if (gender == "women") {
-    exp.variables.him = "her";
-    exp.variables.he = "she";
-    exp.variables.his = "her";
-  }
-  exp.variables.HHim = capitalizeFirstLetter(exp.variables.him);
-  exp.variables.HHis = capitalizeFirstLetter(exp.variables.his);
-  exp.variables.HHe = capitalizeFirstLetter(exp.variables.he);
+  exp.variables = {};
 
   exp.data_trials = [];
   //make corresponding slides:
