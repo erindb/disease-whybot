@@ -56,7 +56,7 @@ var get_nlp_data = function(response, full_sentence, callback) {
     data: full_sentence,
     success: function(data) {
       $("#processing").hide();
-      console.log(JSON.parse(data));
+      // console.log(JSON.parse(data));
       callback(response, "success", JSON.parse(data));
     },
     error: function (responseData, textStatus, errorThrown) {
@@ -357,13 +357,13 @@ function parse_and_continue(datum_index, trial_data, final_callback) {
   var datum = trial_data[datum_index];
   var response = datum.response;
   var full_sentence = datum.before_text + response + datum.after_text;
-  console.log(full_sentence);
+  // console.log(full_sentence);
   get_nlp_data(
     response,
     full_sentence,
     function(response, status, parse) {
-      console.log(response);
-      console.log(parse);
+      // console.log(response);
+      // console.log(parse);
       if (status=="success") {
         console.log("post succeeded");
         var transformed_response = transform_to_3rd_plural(parse, response, datum.before_text);
@@ -734,7 +734,7 @@ function make_slides(f) {
               response = $("#response").val();
               feedback = $("#feedback").val();
             }
-            console.log(response);
+            // console.log(response);
             exp.variables[_s.stim.variable] = response;
             var is_valid = response.length > 0;
             return {
@@ -1098,7 +1098,7 @@ function make_slides(f) {
       var trial_data = [];
       _.forEach(_.keys(_s.response_handlers), function(variable) {
         var datum = _s.response_handlers[variable]();
-        console.log(datum);
+        // console.log(datum);
         if (datum.is_valid==false) {is_valid=false};
         datum = _.extend(_.clone(_s.stim), datum);
         datum = _.extend(_.clone(datum), {
