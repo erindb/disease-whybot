@@ -359,35 +359,89 @@ function parse_and_continue(datum_index, trial_data, final_callback) {
   );
 };
 
+var break_index = function(i) {
+  return str(i+1);
+};
+
+var get_dependents = function(i, dependencies) {
+  var dependents = [];
+  for (var d = 0; d<dependencies.length; d++) {
+    var dependency = dependencies[d];
+    if (dependency.governor==break_index(i)) {
+      dependents.append(dependency);
+    }
+  }
+  return dependents;
+};
+
+var delete_token = function(i, tokens) {
+  tokens[i]["original_word"] = tokens[i]["word"]
+  tokens[i]["word"] = "";
+  return tokens;
+}
+
 var negate_main_verb = function(sentence) {
   var dependencies = sentence["basicDependencies"];
   var tokens = sentence.tokens;
 
   // use ROOT to find the head of the sentence
+  var main_verb_index = index(dependencies[0]["dependent"]);
 
   // if there's a quantifier OFF THAT VERB,
   // drop it and just make two version of the sentence
+  var quantifiers = [
+    "always", "never", "usually", "sometimes", "often",
+    "constantly", "frequently"
+  ];
+  // find all dependents of the main verb
+  var main_verb_dependents = get_dependents(main_verb_index, dependencies);
+  // if any of them have a dependentGloss from the quantifiers above, drop it from tokens
+  for (var i=0; i<main_verb_dependents.length; i++) {
+    var dependency = main_verb_dependents[i];
+    if (quantifiers.includes(dependency.dependentGloss)) {
+      var quantifier_index = index(dependency.dependent);
+      tokens = delete_token(quantifier_index, tokens);
+    }
+  }
 
-  // if there's a helper or modal verb, negate it
-  var helper_verbs = {
-    "does": "doesn't",
-    "did": "didn't",
-    "is": "isn't",
-    "was": "wasn't",
-    "has": "hasn't",
-    "can": "cannot",
-    "should": "shouldn't",
-    "would": "wouldn't",
-    "might": "might not",
-    "must": "doesn't have to",
-    "will": "won't",
-    "could": "couldn't",
-    "may": "can't",
-    "'s": " isn't"
-  };
-  var helper_verbs_list = Object.keys(helper_verbs);
+  var already_has_negation = False;
+  for (var i=0; i<main_verb_dependents.length; i++) {
+    var dependency = main_verb_dependents[i];
+    if (dependency.dep == "neg") {
+      var negation_index = index(dependency.dependent);
+      tokens = delete_token(negation_index, tokens);
+    }
+  }
 
-  // otherwise, change the verb to "did not [LEMMA]"
+  if (already_has_negation) {
+    // if there's negation OFF OF THAT VERB,
+    // drop it and you're done!
+
+  } else {
+    // otherwise...
+
+    // if there's a helper or modal verb, negate it
+    var helper_verbs = {
+      "does": "doesn't",
+      "did": "didn't",
+      "is": "isn't",
+      "was": "wasn't",
+      "has": "hasn't",
+      "can": "cannot",
+      "should": "shouldn't",
+      "would": "wouldn't",
+      "might": "might not",
+      "must": "doesn't have to",
+      "will": "won't",
+      "could": "couldn't",
+      "may": "can't",
+      "'s": " isn't"
+    };
+    var helper_verbs_list = Object.keys(helper_verbs);
+
+    // otherwise, change the verb to "did not [LEMMA]"
+
+  }
 
   // var verbs_to_replace = [];
   // // filter to only verbs
@@ -415,15 +469,12 @@ var negate_main_verb = function(sentence) {
 
   return {
     basicDependencies: dependencies,
-    tokens: new_tokens
-  }}
+    tokens: tokens
+  };
+};
 
 var negate = function(originalText, parse, before_text) {
   var revisedText = originalText;
-  var quantifiers = [
-    "always", "never", "usually", "sometimes", "often",
-    "constantly", "frequently"
-  ];
 
   if (parse==null) {
     return "NOT(" + revisedText + ")";
