@@ -3,6 +3,17 @@ var debug = function(string) {
   if (DEBUG) {console.log(string)};
 };
 
+// put in an example json string to parse
+// make the server bigger
+
+var test = function() {
+  var example_parse = {"sentences":[{"index":0,"basicDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":4,"dependentGloss":"loved"},{"dep":"nmod:poss","governor":2,"governorGloss":"parents","dependent":1,"dependentGloss":"his"},{"dep":"nsubj","governor":4,"governorGloss":"loved","dependent":2,"dependentGloss":"parents"},{"dep":"advmod","governor":4,"governorGloss":"loved","dependent":3,"dependentGloss":"always"},{"dep":"dobj","governor":4,"governorGloss":"loved","dependent":5,"dependentGloss":"him"}],"enhancedDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":4,"dependentGloss":"loved"},{"dep":"nmod:poss","governor":2,"governorGloss":"parents","dependent":1,"dependentGloss":"his"},{"dep":"nsubj","governor":4,"governorGloss":"loved","dependent":2,"dependentGloss":"parents"},{"dep":"advmod","governor":4,"governorGloss":"loved","dependent":3,"dependentGloss":"always"},{"dep":"dobj","governor":4,"governorGloss":"loved","dependent":5,"dependentGloss":"him"}],"enhancedPlusPlusDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":4,"dependentGloss":"loved"},{"dep":"nmod:poss","governor":2,"governorGloss":"parents","dependent":1,"dependentGloss":"his"},{"dep":"nsubj","governor":4,"governorGloss":"loved","dependent":2,"dependentGloss":"parents"},{"dep":"advmod","governor":4,"governorGloss":"loved","dependent":3,"dependentGloss":"always"},{"dep":"dobj","governor":4,"governorGloss":"loved","dependent":5,"dependentGloss":"him"}],"tokens":[{"index":1,"word":"his","originalText":"his","lemma":"he","characterOffsetBegin":0,"characterOffsetEnd":3,"pos":"PRP$","before":"","after":" "},{"index":2,"word":"parents","originalText":"parents","lemma":"parent","characterOffsetBegin":4,"characterOffsetEnd":11,"pos":"NNS","before":" ","after":" "},{"index":3,"word":"always","originalText":"always","lemma":"always","characterOffsetBegin":12,"characterOffsetEnd":18,"pos":"RB","before":" ","after":" "},{"index":4,"word":"loved","originalText":"loved","lemma":"love","characterOffsetBegin":19,"characterOffsetEnd":24,"pos":"VBD","before":" ","after":" "},{"index":5,"word":"him","originalText":"him","lemma":"he","characterOffsetBegin":25,"characterOffsetEnd":28,"pos":"PRP","before":" ","after":""}]}]}
+  var response = "his parents didn't love him";
+  console.log(response);
+  var negated_response = negate(response, example_parse, "Bob has depression because ");
+  console.log(negated_response);
+};
+
 var experiment_label = "disease_whybot_3";
 // for data collection
 
@@ -43,7 +54,7 @@ var example_parser_callback = function(response, status, data) {
 
 var get_nlp_data = function(response, full_sentence, callback) {
   debug(full_sentence);
-  var properties = {annotators: "tokenize,ssplit,pos,depparse"};
+  var properties = {annotators: "tokenize,ssplit,pos,depparse,lemma"};
   var property_string = JSON.stringify(properties);
   var properties_for_url = encodeURIComponent(property_string);
   $("#processing").show();
@@ -248,35 +259,89 @@ var find_subject_dependency = function(dependencies, token, tokens) {
 
 // ------------ PRONOUNS ------------
 var easy_pronouns = {
-  she: "<span class='he'>{{}}</span>",
-  he: "<span class='he'>{{}}</span>",
-  him: "<span class='him'>{{}}</span>",
-  his: "<span class='his'>{{}}</span>"
+  she: "<span class='variable_word he'>{{}}</span>",
+  he: "<span class='variable_word he'>{{}}</span>",
+  him: "<span class='variable_word him'>{{}}</span>",
+  his: "<span class='variable_word his'>{{}}</span>"
 };
-var replace_pronouns = function(sentence) {
-    var tokens = sentence.tokens;
-    var dependencies = sentence.dependencies;
-    var tokens = tokens.map(function(token) {
-      var text = token.originalText.toLowerCase();
-      if (Object.keys(easy_pronouns).indexOf(text)>=0) {
+
+var make_sentence_strings = function(sentence) {
+  var tokens = sentence.tokens;
+
+  var new_words = tokens.map(function(token) {
+    if (token.new_text == null) {
+      return token.before + token.originalText;
+    } else {
+      return token.before + token.new_text;
+    }
+  });
+
+  return new_words.join("");
+};
+
+var replace_pronouns = function(sentence, before_text) {
+  var before_index = before_text.trim().split(" ").length - 1;
+  var tokens = sentence.tokens;
+  var dependencies = sentence["basicDependencies"];
+  var named = false;
+  var new_tokens = [];
+  for (var i=0; i<tokens.length; i++) {
+    var token = tokens[i];
+    var text = token.originalText.toLowerCase();
+    if (Object.keys(easy_pronouns).indexOf(text)>=0 && index(token.index)>= before_index) {
+      if (named) {
         token.new_text = easy_pronouns[text];
-        return token;
-      }
-      if (text == "her") {
-        var pos = token.pos;
-        if (pos == "PRP$") {
-          token.new_text = "<span class='his'>{{}}</span>";
-          return token;
-        } else if (pos=="PRP") {
-          token.new_text = "<span class='him'>{{}}</span>";
-          return token;
+      } else {
+        if (text == "his") {
+          token.new_text = "<span class='variable_word name'>{{}}'s</span>"
         } else {
-          console.log("warning 239847");
+          token.new_text = "<span class='variable_word name'>{{}}</span>"
         }
+        named = true
       }
-      return token;
-    });
-    return {tokens: tokens, basicDependencies: dependencies};
+    } else if (text == "her" && index(token.index)>= before_index) {
+      var pos = token.pos;
+      if (pos == "PRP$") {
+        if (named) {
+          token.new_text = "<span class='variable_word his'>{{}}</span>";
+        } else {
+          token.new_text = "<span class='variable_word name'>{{}}'s</span>"
+          named = true
+        }
+      } else if (pos=="PRP") {
+        if (named) {
+          token.new_text = "<span class='variable_word him'>{{}}</span>";
+        } else {
+          token.new_text = "<span class='variable_word name'>{{}}</span>";
+          named = true
+        }
+      } else {
+        console.log("warning 239847");
+      }
+    }
+    new_tokens.push(token)
+  }
+  // var tokens = tokens.map(function(token) {
+  //   var text = token.word.toLowerCase();
+  //   if (Object.keys(easy_pronouns).indexOf(text)>=0 && index(token.index)>= before_index) {
+  //     token.new_text = easy_pronouns[text];
+  //     return token;
+  //   }
+  //   if (text == "her" && index(token.index)>= before_index) {
+  //     var pos = token.pos;
+  //     if (pos == "PRP$") {
+  //       token.new_text = "<span class='variable_word his'>{{}}</span>";
+  //       return token;
+  //     } else if (pos=="PRP") {
+  //       token.new_text = "<span class='variable_word him'>{{}}</span>";
+  //       return token;
+  //     } else {
+  //       console.log("warning 239847");
+  //     }
+  //   }
+  //   return token;
+  // });
+  return {tokens: new_tokens, basicDependencies: dependencies};
 };
 
 function capitalizeFirstLetter(string) {
@@ -323,7 +388,8 @@ function parse_and_continue(datum_index, trial_data, final_callback) {
   // console.log(full_sentence);
   get_nlp_data(
     response,
-    full_sentence,
+    // full_sentence,
+    response,
     function(response, status, parse) {
       // console.log(response);
       // console.log(parse);
@@ -331,18 +397,24 @@ function parse_and_continue(datum_index, trial_data, final_callback) {
         console.log("post succeeded");
         // var transformed_response = transform_to_3rd_plural(parse, response, datum.before_text);
         // datum.transformed_response = transformed_response;
-        var negated_response = negate(response, parse, datum.before_text);
+        var negation_data = negate(response, parse, datum.before_text);
+        datum.negated_response = negation_data.negation;
+        datum.positive_response = negation_data.positive;
         datum.parse_error = false;
       } else if (status=="failure") {
         console.log("post failed");
         // datum.transformed_response = response;
-        datum.negated_response = negate(response);
+        var negation_data = negate(response);
+        datum.negated_response = negation_data.negation;
+        datum.positive_response = negation_data.positive;
+        // datum.negated_response = negate(response);
         datum.parse_error = true;
       } else {
         console.log("error -21938409238r");
       }
       // exp.variables[datum.variable + "_transformed_to_they"] = datum.transformed_response;
-      exp.variables["negated_" + datum.variable] = datum.negated_response
+      exp.variables["negated_" + datum.variable] = datum.negated_response;
+      exp.variables["positive_" + datum.variable] = datum.positive_response;
       // now we have the transformed response,
       // or some stand-in, for one more response
       // and we have converted all_data accordingly.
@@ -360,7 +432,7 @@ function parse_and_continue(datum_index, trial_data, final_callback) {
 };
 
 var break_index = function(i) {
-  return str(i+1);
+  return "" + (i+1);
 };
 
 var get_dependents = function(i, dependencies) {
@@ -368,17 +440,11 @@ var get_dependents = function(i, dependencies) {
   for (var d = 0; d<dependencies.length; d++) {
     var dependency = dependencies[d];
     if (dependency.governor==break_index(i)) {
-      dependents.append(dependency);
+      dependents.push(dependency);
     }
   }
   return dependents;
 };
-
-var delete_token = function(i, tokens) {
-  tokens[i]["original_word"] = tokens[i]["word"]
-  tokens[i]["word"] = "";
-  return tokens;
-}
 
 var negate_main_verb = function(sentence) {
   var dependencies = sentence["basicDependencies"];
@@ -387,40 +453,50 @@ var negate_main_verb = function(sentence) {
   // use ROOT to find the head of the sentence
   var main_verb_index = index(dependencies[0]["dependent"]);
 
-  // if there's a quantifier OFF THAT VERB,
-  // drop it and just make two version of the sentence
-  var quantifiers = [
-    "always", "never", "usually", "sometimes", "often",
-    "constantly", "frequently"
-  ];
   // find all dependents of the main verb
   var main_verb_dependents = get_dependents(main_verb_index, dependencies);
-  // if any of them have a dependentGloss from the quantifiers above, drop it from tokens
-  for (var i=0; i<main_verb_dependents.length; i++) {
-    var dependency = main_verb_dependents[i];
-    if (quantifiers.includes(dependency.dependentGloss)) {
-      var quantifier_index = index(dependency.dependent);
-      tokens = delete_token(quantifier_index, tokens);
-    }
-  }
 
-  var already_has_negation = False;
+  var negated_sentence = JSON.parse(JSON.stringify(sentence))
+  var positive_sentence = JSON.parse(JSON.stringify(sentence))
+
+  // if there's negation OFF OF THAT VERB,
+  // keep it to get the "positive" version and
+  // drop it to get the "negated" version
+  var already_has_negation = false;
   for (var i=0; i<main_verb_dependents.length; i++) {
     var dependency = main_verb_dependents[i];
     if (dependency.dep == "neg") {
       var negation_index = index(dependency.dependent);
-      tokens = delete_token(negation_index, tokens);
+      negated_sentence.tokens[negation_index].new_text = "";
+      already_has_negation = true
     }
   }
-
   if (already_has_negation) {
-    // if there's negation OFF OF THAT VERB,
-    // drop it and you're done!
-
+    return {
+      negation: make_sentence_strings(negated_sentence),
+      positive: make_sentence_strings(positive_sentence)
+    }
   } else {
+
     // otherwise...
 
-    // if there's a helper or modal verb, negate it
+    // if there's a quantifier OFF THAT VERB,
+    // drop it and just make two version of the sentence
+    var quantifiers = [
+      "always", "never", "usually", "sometimes", "often",
+      "constantly", "frequently"
+    ];
+    // if any of the main verb dependents have a dependentGloss from the quantifiers above, drop it from tokens
+    for (var i=0; i<main_verb_dependents.length; i++) {
+      var dependency = main_verb_dependents[i];
+      if (quantifiers.includes(dependency.dependentGloss)) {
+        var quantifier_index = index(dependency.dependent);
+        negated_sentence.tokens[quantifier_index].new_text = "";
+        positive_sentence.tokens[quantifier_index].new_text = "";
+      }
+    }
+
+    // if there's a helper or modal verb OFF THE MAIN VERB, negate it
     var helper_verbs = {
       "does": "doesn't",
       "did": "didn't",
@@ -438,79 +514,66 @@ var negate_main_verb = function(sentence) {
       "'s": " isn't"
     };
     var helper_verbs_list = Object.keys(helper_verbs);
+    var has_helper_verb = false;
+    for (var i=0; i<main_verb_dependents.length; i++) {
+      var dependency = main_verb_dependents[i];
+      if (helper_verbs_list.includes(dependency.dependentGloss)) {
+        var helper_verb_index = index(dependency.dependent);
+        negated_sentence.tokens[helper_verb_index].new_text = helper_verbs[dependency.dependentGloss];
+      }
+    }
 
-    // otherwise, change the verb to "did not [LEMMA]"
+    if (has_helper_verb) {
+      return {
+        negation: make_sentence_strings(negated_sentence),
+        positive: make_sentence_strings(positive_sentence)
+      }
+    } else {
+      // otherwise, change the verb to "did not [LEMMA]"
+      var main_verb_lemma = sentence.tokens[main_verb_index].lemma;
+      negated_sentence.tokens[main_verb_index].new_text = "did not " + main_verb_lemma;
+
+      return {
+        negation: make_sentence_strings(negated_sentence),
+        positive: make_sentence_strings(positive_sentence)
+      }
+    }
 
   }
-
-  // var verbs_to_replace = [];
-  // // filter to only verbs
-  // var all_verbs = tokens.filter(function(token) {
-  //   return token.pos[0]=="V"
-  // });
-
-  // // extract verbs with (s)he as subject
-  // for (var v=0; v<all_verbs.length; v++) {
-  //   var token = all_verbs[v];
-  //   // find the subject of each verb by looking in the dependency parse
-  //   if (has_they_subject(dependencies, token, tokens)) {
-  //     verbs_to_replace.push(token);
-  //   };
-  // }
-
-  // var new_tokens = tokens;
-  // for (var v=0; v<verbs_to_replace.length; v++) {
-  //   var verb_to_replace = verbs_to_replace[v];
-  //   var token_index = index(verb_to_replace.index);
-  //   new_tokens[token_index].new_text = transform_verb(
-  //     verb_to_replace.originalText
-  //   );
-  // }
-
-  return {
-    basicDependencies: dependencies,
-    tokens: tokens
-  };
 };
 
 var negate = function(originalText, parse, before_text) {
   var revisedText = originalText;
 
   if (parse==null) {
-    return "NOT(" + revisedText + ")";
+    return {negation: "NOT(" + revisedText + ")", positive: revisedText};
   } else {
     var sentences = parse.sentences;
 
     // abstract out pronouns
-    var pronouns_replaced = _.map(sentences, replace_pronouns);
+    // var pronouns_replaced = _.map(sentences, function(s) {return replace_pronouns(s, before_text)});
+    var pronouns_replaced = _.map(sentences, function(s) {return replace_pronouns(s, "")});
     // negate verb
-    var negated_sentences = _.map(pronouns_replaced, negate_main_verb);
+    // Drop any additional sentences people give - TODO
+    var negated_sentences_data = negate_main_verb(pronouns_replaced[0]);
 
-    var make_sentence_strings = function(sentence) {
-      var tokens = sentence.tokens;
+    // var full_sentence = negated_sentences.map(make_sentence_strings).join("");
+    // console.log(full_sentence)
 
-      var new_words = tokens.map(function(token) {
-        if (token.new_text) {
-          return token.before + token.new_text;
-        } else {
-          return token.before + token.originalText;
-        }
-      });
+    // var n_words_total = full_sentence.split(" ").length;
 
-      return new_words.join("");
-    };
+    // before = before_text.replace(/ $/, "");
+    // var n_words_before = before.split(" ").length;
 
-    var full_sentence = negated_sentences.map(make_sentence_strings).join("");
+    // // var n_words_response = n_words_total - n_words_before;
 
-    var n_words_response = response.split(" ").length;
-    before = before.replace(/ $/, "");
-    var n_words_before = before.split(" ").length;
-    var all_words = full_sentence.split(" ");
-    var response_words = all_words.slice(n_words_before, n_words_before+n_words_response);
-    response = response_words.join(" ");
-    response = response.replace(/[.,]$/, "");
+    // var all_words = full_sentence.split(" ");
 
-    return response;
+    // var response_words = all_words.slice(n_words_before, n_words_total);
+    // response = response_words.join(" ");
+    // response = response.replace(/[.,]$/, "");
+
+    return negated_sentences_data;
   }
 };
 
@@ -1239,6 +1302,7 @@ function make_slides(f) {
 
 /// init ///
 function init() {
+  test();
 
   repeatWorker = false;
   (function(){
