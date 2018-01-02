@@ -25,8 +25,9 @@
   var properties_for_url = encodeURIComponent(property_string);
   $.ajax({
     type: "POST",
-    url: 'http://' +
-      'ec2-54-219-187-44.us-west-1.compute.amazonaws.com/' +
+    url: 'https://' +
+      //'ec2-54-219-187-44.us-west-1.compute.amazonaws.com/' +
+      'rxdhawkins.me:12345' +
       '?properties=' +
       properties_for_url,
     data: response,

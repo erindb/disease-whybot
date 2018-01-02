@@ -293,7 +293,7 @@ var replace_pronouns = function(sentence, before_text) {
         token.new_text = easy_pronouns[text];
       } else {
         if (text == "his") {
-          token.new_text = "<span class='variable_word name'>{{}}'s</span>"
+          token.new_text = "<span class='variable_word name'>{{}}</span>'s"
         } else {
           token.new_text = "<span class='variable_word name'>{{}}</span>"
         }
@@ -648,7 +648,8 @@ var level2 = [
     trial_level: 2,
     variable: "pCpC",
     before: (
-      span("name") + " " + span("pC") + " because "
+      //span("name") + " " + 
+      span("pC") + " because "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -660,7 +661,8 @@ var level2 = [
     trial_level: 2,
     variable: "pCnC",
     before: (
-      span("name") + " " + span("negated_pC") + " because " // placeholder 
+      //span("name") + " " + 
+      span("negated_pC") + " because " // placeholder 
     ),
     after: ".",
     n_symptoms: "NA",
@@ -672,7 +674,8 @@ var level2 = [
     trial_level: 2,
     variable: "pCnR",
     before: (
-      "Because " + span("name") + " " + span("negated_pC") + ", "
+      "Because " + //span("name") + " " + 
+      span("negated_pC") + ", "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -684,7 +687,8 @@ var level2 = [
     trial_level: 2,
     variable: "nCpC",
     before: (
-      span("name") + " " + span("nC") + " because "
+      //span("name") + " " + 
+      span("nC") + " because "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -696,7 +700,8 @@ var level2 = [
     trial_level: 2,
     variable: "nCnC",
     before: (
-      span("name") + " " +  span("negated_nC") + " because " 
+      //span("name") + " " +  
+      span("negated_nC") + " because " 
     ),
     after: ".",
     n_symptoms: "NA",
@@ -708,7 +713,8 @@ var level2 = [
     trial_level: 2,
     variable: "nCpR",
     before: (
-      "Because " + span("name") + " " + span("nC") + ", " 
+      "Because " + //span("name") + " " + 
+      span("nC") + ", " 
     ),
     after: ".",
     n_symptoms: "NA",
@@ -721,7 +727,8 @@ var level2 = [
     trial_level: 2,
     variable: "pRnC",
     before: (
-      span("name") + " " +  span("negated_pR") + " because "
+      //span("name") + " " +  
+      span("negated_pR") + " because "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -733,7 +740,8 @@ var level2 = [
     trial_level: 2,
     variable: "pRpR",
     before: (
-      "Because " + span("name") + " " +  span("pR")
+      "Because " + //span("name") + " " +  
+      span("pR")
     ),
     after: ".",
     n_symptoms: "NA",
@@ -745,7 +753,8 @@ var level2 = [
     trial_level: 2,
     variable: "pRnR",
     before: (
-      "Because " + span("name") + " " +  span("negated_pR") + ", "
+      "Because " + //span("name") + " " +  
+      span("negated_pR") + ", "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -757,7 +766,8 @@ var level2 = [
     trial_level: 2,
     variable: "nRpC",
     before: (
-      span("name") + " " +  span("nR") + " because "
+      //span("name") + " " + 
+      span("nR") + " because "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -769,7 +779,8 @@ var level2 = [
     trial_level: 2,
     variable: "nRpR",
     before: (
-      "Because " + span("name") + " " + span("nR")
+      "Because " + //span("name") + " " + 
+      span("nR")
     ),
     after: ".",
     n_symptoms: "NA",
@@ -781,7 +792,8 @@ var level2 = [
     trial_level: 2,
     variable: "nRnR",
     before: (
-      "Because " + span("name") + " " +  span("negated_nR") + ", "
+      "Because " + //span("name") + " " + 
+      span("negated_nR") + ", "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -1144,6 +1156,12 @@ function make_slides(f) {
         _.forEach(_.keys(exp.variables), function(variable) {
           $("." + variable).html(exp.variables[variable]);
         });
+
+        // then do it again, because some vars have other vars inside
+        _.forEach(["name", "HHe", "HHim", "HHis", "he", "his", "him"], function(variable) {
+          $("." + variable).html(exp.variables[variable]);
+        });
+
         return true;
       };
 
@@ -1350,6 +1368,7 @@ function init() {
   ];
 
   exp.variables = {};
+  exp.variables2 = {};
 
   exp.data_trials = [];
   //make corresponding slides:
