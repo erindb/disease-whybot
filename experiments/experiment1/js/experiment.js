@@ -670,9 +670,9 @@ var level2 = [
       //span("name") + " " + 
       "<span class='history'>" +
       span("name") + " has " + span("D") + ".<br/>" + 
-      span("positive_pC") + ".<br/>" +
+      span("positive_pC").trim() + ".<br/>" +
       "</span>" +
-      span("positive_pC") + " because "
+      span("positive_pC").trim() + " because "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -689,7 +689,7 @@ var level2 = [
       span("name") + " does not have " + span("D") + ".<br/>" +
       span("negated_pC").trim() + ".<br/>" +
       "</span>" + 
-      span("negated_pC") + " because " // placeholder 
+      span("negated_pC").trim() + " because " // placeholder 
     ),
     after: ".",
     n_symptoms: "NA",
@@ -703,10 +703,10 @@ var level2 = [
     before: (
       "<span class='history'>" +
       span("name") + " does not have " + span("D") + ".<br/>" +
-      span("negated_pC") + ".<br/>" +
+      span("negated_pC").trim() + ".<br/>" +
       "</span>" +
       "Because " + //span("name") + " " + 
-      span("negated_pC") + ", "
+      span("negated_pC").trim() + ", "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -721,9 +721,9 @@ var level2 = [
       span("name") + " " + 
       "<span class='history'>" +
       span("name") + " does not have " + span("D") + ".<br/>" + 
-      span("positive_nC") + ".<br/>" +
+      span("positive_nC").trim() + ".<br/>" +
       "</span>" +
-      span("positive_nC") + " because "
+      span("positive_nC").trim() + " because "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -738,9 +738,9 @@ var level2 = [
       span("name") + " " +  
       "<span class='history'>" +
       span("name") + " has " + span("D") + ".<br/>" + 
-      span("negated_nC") + ".<br/>" +
+      span("negated_nC").trim() + ".<br/>" +
       "</span>" +
-      span("negated_nC") + " because " 
+      span("negated_nC").trim() + " because " 
     ),
     after: ".",
     n_symptoms: "NA",
@@ -754,10 +754,10 @@ var level2 = [
     before: (
       "<span class='history'>" +
       span("name") + " does not have " + span("D") + ".<br/>" + 
-      span("positive_nC") + ".<br/>" +
+      span("positive_nC").trim() + ".<br/>" +
       "</span>" +
       "Because " + //span("name") + " " + 
-      span("positive_nC") + ", " 
+      span("positive_nC").trim() + ", " 
     ),
     after: ".",
     n_symptoms: "NA",
@@ -773,9 +773,9 @@ var level2 = [
       span("name") + " " +  
       "<span class='history'>" +
       span("name") + " does not have " + span("D") + ".<br/>" + 
-      span("negated_pR") + ".<br/>" +
+      span("negated_pR").trim() + ".<br/>" +
       "</span>" +
-      span("negated_pR") + " because "
+      span("negated_pR").trim() + " because "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -789,10 +789,10 @@ var level2 = [
     before: (
       "<span class='history'>" +
       span("name") + " has " + span("D") + ".<br/>" + 
-      span("positive_pR") + ".<br/>" +
+      span("positive_pR").trim() + ".<br/>" +
       "</span>" +
       "Because " + //span("name") + " " +  
-      span("positive_pR") + ", "
+      span("positive_pR").trim() + ", "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -806,10 +806,10 @@ var level2 = [
     before: (
       "<span class='history'>" +
       span("name") + " does not have " + span("D") + ".<br/>" + 
-      span("negated_pR") + ".<br/>" +
+      span("negated_pR").trim() + ".<br/>" +
       "</span>" +
       "Because " + //span("name") + " " +  
-      span("negated_pR") + ", "
+      span("negated_pR").trim() + ", "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -824,9 +824,9 @@ var level2 = [
       span("name") + " " + 
       "<span class='history'>" +
       span("name") + " does not have " + span("D") + ".<br/>" + 
-      span("positive_nR") + ".<br/>" +
+      span("positive_nR").trim() + ".<br/>" +
       "</span>" +
-      span("positive_nR") + " because "
+      span("positive_nR").trim() + " because "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -840,10 +840,10 @@ var level2 = [
     before: (
       "<span class='history'>" +
       span("name") + " does not have " + span("D") + ".<br/>" + 
-      span("positive_nR") + ".<br/>" +
+      span("positive_nR").trim() + ".<br/>" +
       "</span>" +
       "Because " + //span("name") + " " + 
-      span("positive_nR") + ", "
+      span("positive_nR").trim() + ", "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -857,10 +857,10 @@ var level2 = [
     before: (
       "<span class='history'>" +
       span("name") + " has " + span("D") + ".<br/>" + 
-      span("negated_nR") + ".<br/>" +
+      span("negated_nR").trim() + ".<br/>" +
       "</span>" +
       "Because " + //span("name") + " " + 
-      span("negated_nR") + ", "
+      span("negated_nR").trim() + ", "
     ),
     after: ".",
     n_symptoms: "NA",
