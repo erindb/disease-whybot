@@ -7,10 +7,11 @@ var debug = function(string) {
 // make the server bigger
 
 var test = function() {
-  var example_parse = {"sentences":[{"index":0,"basicDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":4,"dependentGloss":"loved"},{"dep":"nmod:poss","governor":2,"governorGloss":"parents","dependent":1,"dependentGloss":"his"},{"dep":"nsubj","governor":4,"governorGloss":"loved","dependent":2,"dependentGloss":"parents"},{"dep":"advmod","governor":4,"governorGloss":"loved","dependent":3,"dependentGloss":"always"},{"dep":"dobj","governor":4,"governorGloss":"loved","dependent":5,"dependentGloss":"him"}],"enhancedDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":4,"dependentGloss":"loved"},{"dep":"nmod:poss","governor":2,"governorGloss":"parents","dependent":1,"dependentGloss":"his"},{"dep":"nsubj","governor":4,"governorGloss":"loved","dependent":2,"dependentGloss":"parents"},{"dep":"advmod","governor":4,"governorGloss":"loved","dependent":3,"dependentGloss":"always"},{"dep":"dobj","governor":4,"governorGloss":"loved","dependent":5,"dependentGloss":"him"}],"enhancedPlusPlusDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":4,"dependentGloss":"loved"},{"dep":"nmod:poss","governor":2,"governorGloss":"parents","dependent":1,"dependentGloss":"his"},{"dep":"nsubj","governor":4,"governorGloss":"loved","dependent":2,"dependentGloss":"parents"},{"dep":"advmod","governor":4,"governorGloss":"loved","dependent":3,"dependentGloss":"always"},{"dep":"dobj","governor":4,"governorGloss":"loved","dependent":5,"dependentGloss":"him"}],"tokens":[{"index":1,"word":"his","originalText":"his","lemma":"he","characterOffsetBegin":0,"characterOffsetEnd":3,"pos":"PRP$","before":"","after":" "},{"index":2,"word":"parents","originalText":"parents","lemma":"parent","characterOffsetBegin":4,"characterOffsetEnd":11,"pos":"NNS","before":" ","after":" "},{"index":3,"word":"always","originalText":"always","lemma":"always","characterOffsetBegin":12,"characterOffsetEnd":18,"pos":"RB","before":" ","after":" "},{"index":4,"word":"loved","originalText":"loved","lemma":"love","characterOffsetBegin":19,"characterOffsetEnd":24,"pos":"VBD","before":" ","after":" "},{"index":5,"word":"him","originalText":"him","lemma":"he","characterOffsetBegin":25,"characterOffsetEnd":28,"pos":"PRP","before":" ","after":""}]}]}
-  var response = "his parents didn't love him";
+  exp.name = "Bob";
+  var example_parse = {"sentences":[{"index":0,"basicDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":2,"dependentGloss":"thinks"},{"dep":"nsubj","governor":2,"governorGloss":"thinks","dependent":1,"dependentGloss":"He"},{"dep":"nsubj","governor":4,"governorGloss":"cure","dependent":3,"dependentGloss":"they"},{"dep":"ccomp","governor":2,"governorGloss":"thinks","dependent":4,"dependentGloss":"cure"},{"dep":"dobj","governor":4,"governorGloss":"cure","dependent":5,"dependentGloss":"colds"},{"dep":"punct","governor":2,"governorGloss":"thinks","dependent":6,"dependentGloss":"."}],"enhancedDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":2,"dependentGloss":"thinks"},{"dep":"nsubj","governor":2,"governorGloss":"thinks","dependent":1,"dependentGloss":"He"},{"dep":"nsubj","governor":4,"governorGloss":"cure","dependent":3,"dependentGloss":"they"},{"dep":"ccomp","governor":2,"governorGloss":"thinks","dependent":4,"dependentGloss":"cure"},{"dep":"dobj","governor":4,"governorGloss":"cure","dependent":5,"dependentGloss":"colds"},{"dep":"punct","governor":2,"governorGloss":"thinks","dependent":6,"dependentGloss":"."}],"enhancedPlusPlusDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":2,"dependentGloss":"thinks"},{"dep":"nsubj","governor":2,"governorGloss":"thinks","dependent":1,"dependentGloss":"He"},{"dep":"nsubj","governor":4,"governorGloss":"cure","dependent":3,"dependentGloss":"they"},{"dep":"ccomp","governor":2,"governorGloss":"thinks","dependent":4,"dependentGloss":"cure"},{"dep":"dobj","governor":4,"governorGloss":"cure","dependent":5,"dependentGloss":"colds"},{"dep":"punct","governor":2,"governorGloss":"thinks","dependent":6,"dependentGloss":"."}],"tokens":[{"index":1,"word":"He","originalText":"He","lemma":"he","characterOffsetBegin":0,"characterOffsetEnd":2,"pos":"PRP","ner":"O","speaker":"PER0","before":"","after":" "},{"index":2,"word":"thinks","originalText":"thinks","lemma":"think","characterOffsetBegin":3,"characterOffsetEnd":9,"pos":"VBZ","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":3,"word":"they","originalText":"they","lemma":"they","characterOffsetBegin":10,"characterOffsetEnd":14,"pos":"PRP","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":4,"word":"cure","originalText":"cure","lemma":"cure","characterOffsetBegin":15,"characterOffsetEnd":19,"pos":"VBP","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":5,"word":"colds","originalText":"colds","lemma":"cold","characterOffsetBegin":20,"characterOffsetEnd":25,"pos":"NNS","ner":"O","speaker":"PER0","before":" ","after":""},{"index":6,"word":".","originalText":".","lemma":".","characterOffsetBegin":25,"characterOffsetEnd":26,"pos":".","ner":"O","speaker":"PER0","before":"","after":" "}]},{"index":1,"basicDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":2,"dependentGloss":"takes"},{"dep":"nsubj","governor":2,"governorGloss":"takes","dependent":1,"dependentGloss":"Bob"},{"dep":"dobj","governor":2,"governorGloss":"takes","dependent":3,"dependentGloss":"vitamins"},{"dep":"mark","governor":6,"governorGloss":"thinks","dependent":4,"dependentGloss":"because"},{"dep":"nsubj","governor":6,"governorGloss":"thinks","dependent":5,"dependentGloss":"he"},{"dep":"advcl","governor":2,"governorGloss":"takes","dependent":6,"dependentGloss":"thinks"},{"dep":"nsubj","governor":8,"governorGloss":"cure","dependent":7,"dependentGloss":"they"},{"dep":"ccomp","governor":6,"governorGloss":"thinks","dependent":8,"dependentGloss":"cure"},{"dep":"dobj","governor":8,"governorGloss":"cure","dependent":9,"dependentGloss":"colds"},{"dep":"punct","governor":2,"governorGloss":"takes","dependent":10,"dependentGloss":"."}],"enhancedDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":2,"dependentGloss":"takes"},{"dep":"nsubj","governor":2,"governorGloss":"takes","dependent":1,"dependentGloss":"Bob"},{"dep":"dobj","governor":2,"governorGloss":"takes","dependent":3,"dependentGloss":"vitamins"},{"dep":"mark","governor":6,"governorGloss":"thinks","dependent":4,"dependentGloss":"because"},{"dep":"nsubj","governor":6,"governorGloss":"thinks","dependent":5,"dependentGloss":"he"},{"dep":"advcl:because","governor":2,"governorGloss":"takes","dependent":6,"dependentGloss":"thinks"},{"dep":"nsubj","governor":8,"governorGloss":"cure","dependent":7,"dependentGloss":"they"},{"dep":"ccomp","governor":6,"governorGloss":"thinks","dependent":8,"dependentGloss":"cure"},{"dep":"dobj","governor":8,"governorGloss":"cure","dependent":9,"dependentGloss":"colds"},{"dep":"punct","governor":2,"governorGloss":"takes","dependent":10,"dependentGloss":"."}],"enhancedPlusPlusDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":2,"dependentGloss":"takes"},{"dep":"nsubj","governor":2,"governorGloss":"takes","dependent":1,"dependentGloss":"Bob"},{"dep":"dobj","governor":2,"governorGloss":"takes","dependent":3,"dependentGloss":"vitamins"},{"dep":"mark","governor":6,"governorGloss":"thinks","dependent":4,"dependentGloss":"because"},{"dep":"nsubj","governor":6,"governorGloss":"thinks","dependent":5,"dependentGloss":"he"},{"dep":"advcl:because","governor":2,"governorGloss":"takes","dependent":6,"dependentGloss":"thinks"},{"dep":"nsubj","governor":8,"governorGloss":"cure","dependent":7,"dependentGloss":"they"},{"dep":"ccomp","governor":6,"governorGloss":"thinks","dependent":8,"dependentGloss":"cure"},{"dep":"dobj","governor":8,"governorGloss":"cure","dependent":9,"dependentGloss":"colds"},{"dep":"punct","governor":2,"governorGloss":"takes","dependent":10,"dependentGloss":"."}],"tokens":[{"index":1,"word":"Bob","originalText":"Bob","lemma":"Bob","characterOffsetBegin":27,"characterOffsetEnd":30,"pos":"NNP","ner":"PERSON","speaker":"PER0","before":" ","after":" "},{"index":2,"word":"takes","originalText":"takes","lemma":"take","characterOffsetBegin":31,"characterOffsetEnd":36,"pos":"VBZ","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":3,"word":"vitamins","originalText":"vitamins","lemma":"vitamin","characterOffsetBegin":37,"characterOffsetEnd":45,"pos":"NNS","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":4,"word":"because","originalText":"because","lemma":"because","characterOffsetBegin":46,"characterOffsetEnd":53,"pos":"IN","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":5,"word":"he","originalText":"he","lemma":"he","characterOffsetBegin":54,"characterOffsetEnd":56,"pos":"PRP","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":6,"word":"thinks","originalText":"thinks","lemma":"think","characterOffsetBegin":57,"characterOffsetEnd":63,"pos":"VBZ","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":7,"word":"they","originalText":"they","lemma":"they","characterOffsetBegin":64,"characterOffsetEnd":68,"pos":"PRP","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":8,"word":"cure","originalText":"cure","lemma":"cure","characterOffsetBegin":69,"characterOffsetEnd":73,"pos":"VBP","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":9,"word":"colds","originalText":"colds","lemma":"cold","characterOffsetBegin":74,"characterOffsetEnd":79,"pos":"NNS","ner":"O","speaker":"PER0","before":" ","after":""},{"index":10,"word":".","originalText":".","lemma":".","characterOffsetBegin":79,"characterOffsetEnd":80,"pos":".","ner":"O","speaker":"PER0","before":"","after":""}]}],"corefs":{"5":[{"id":0,"text":"He","type":"PRONOMINAL","number":"SINGULAR","gender":"MALE","animacy":"ANIMATE","startIndex":1,"endIndex":2,"headIndex":1,"sentNum":1,"position":[1,1],"isRepresentativeMention":true},{"id":5,"text":"he","type":"PRONOMINAL","number":"SINGULAR","gender":"MALE","animacy":"ANIMATE","startIndex":5,"endIndex":6,"headIndex":5,"sentNum":2,"position":[2,3],"isRepresentativeMention":false}],"6":[{"id":1,"text":"they","type":"PRONOMINAL","number":"PLURAL","gender":"UNKNOWN","animacy":"ANIMATE","startIndex":3,"endIndex":4,"headIndex":3,"sentNum":1,"position":[1,2],"isRepresentativeMention":true},{"id":6,"text":"they","type":"PRONOMINAL","number":"PLURAL","gender":"UNKNOWN","animacy":"ANIMATE","startIndex":7,"endIndex":8,"headIndex":7,"sentNum":2,"position":[2,4],"isRepresentativeMention":false}]}};
+  var response = "he thinks they cure colds";
   console.log(response);
-  var negated_response = negate(response, example_parse, "Bob has depression because ");
+  var negated_response = negate(response, example_parse, "Bob takes vitamins because ");
   console.log(negated_response);
 };
 
@@ -388,8 +389,9 @@ function parse_and_continue(datum_index, trial_data, final_callback) {
   // console.log(full_sentence);
   get_nlp_data(
     response,
-    // full_sentence,
-    response,
+    //full_sentence,
+    response.charAt(0).toUpperCase() + response.slice(1),
+    //response.charAt(0).toUpperCase() + response.slice(1) + ". " + full_sentence,
     function(response, status, parse) {
       // console.log(response);
       // console.log(parse);
@@ -473,8 +475,8 @@ var negate_main_verb = function(sentence) {
   }
   if (already_has_negation) {
     return {
-      negation: make_sentence_strings(negated_sentence),
-      positive: make_sentence_strings(positive_sentence)
+      negation: make_sentence_strings(negated_sentence) + " ",
+      positive: make_sentence_strings(positive_sentence) + " "
     }
   } else {
 
@@ -520,13 +522,14 @@ var negate_main_verb = function(sentence) {
       if (helper_verbs_list.includes(dependency.dependentGloss)) {
         var helper_verb_index = index(dependency.dependent);
         negated_sentence.tokens[helper_verb_index].new_text = helper_verbs[dependency.dependentGloss];
+        has_helper_verb = true;
       }
     }
 
     if (has_helper_verb) {
       return {
-        negation: make_sentence_strings(negated_sentence),
-        positive: make_sentence_strings(positive_sentence)
+        negation: make_sentence_strings(negated_sentence) + " ",
+        positive: make_sentence_strings(positive_sentence) + " "
       }
     } else {
       // otherwise, change the verb to "did not [LEMMA]"
@@ -534,12 +537,26 @@ var negate_main_verb = function(sentence) {
       negated_sentence.tokens[main_verb_index].new_text = "did not " + main_verb_lemma;
 
       return {
-        negation: make_sentence_strings(negated_sentence),
-        positive: make_sentence_strings(positive_sentence)
+        negation: make_sentence_strings(negated_sentence) + " ",
+        positive: make_sentence_strings(positive_sentence) + " "
       }
     }
 
   }
+};
+
+var resolve_corefs = function(parse) {
+  var corefs = parse.corefs;
+  for (coref_id in corefs) {
+    // if the mentions include the protagonist, don't replace anything here
+    var includes_protagonist = false;
+    //console.log(exp.name);
+    var mentions = corefs[coref_id]
+    for (var i=0; i<mentions.length; i++) {
+      var mention = mentions[i];
+    }
+  }
+  return parse;
 };
 
 var negate = function(originalText, parse, before_text) {
@@ -548,8 +565,10 @@ var negate = function(originalText, parse, before_text) {
   if (parse==null) {
     return {negation: "NOT(" + revisedText + ")", positive: revisedText};
   } else {
-    var sentences = parse.sentences;
 
+    var corefs_resolved_parse = resolve_corefs(parse);
+
+    var sentences = corefs_resolved_parse.sentences;
     // abstract out pronouns
     // var pronouns_replaced = _.map(sentences, function(s) {return replace_pronouns(s, before_text)});
     var pronouns_replaced = _.map(sentences, function(s) {return replace_pronouns(s, "")});
@@ -649,7 +668,11 @@ var level2 = [
     variable: "pCpC",
     before: (
       //span("name") + " " + 
-      span("pC") + " because "
+      "<span class='history'>" +
+      span("name") + " has " + span("D") + ".<br/>" + 
+      span("positive_pC") + ".<br/>" +
+      "</span>" +
+      span("positive_pC") + " because "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -662,6 +685,10 @@ var level2 = [
     variable: "pCnC",
     before: (
       //span("name") + " " + 
+      "<span class='history'>" +
+      span("name") + " does not have " + span("D") + ".<br/>" +
+      span("negated_pC") + ".<br/>" +
+      "</span>" + 
       span("negated_pC") + " because " // placeholder 
     ),
     after: ".",
@@ -674,6 +701,10 @@ var level2 = [
     trial_level: 2,
     variable: "pCnR",
     before: (
+      "<span class='history'>" +
+      span("name") + " does not have " + span("D") + ".<br/>" +
+      span("negated_pC") + ".<br/>" +
+      "</span>" +
       "Because " + //span("name") + " " + 
       span("negated_pC") + ", "
     ),
@@ -688,7 +719,7 @@ var level2 = [
     variable: "nCpC",
     before: (
       //span("name") + " " + 
-      span("nC") + " because "
+      span("positive_nC") + " because "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -714,7 +745,7 @@ var level2 = [
     variable: "nCpR",
     before: (
       "Because " + //span("name") + " " + 
-      span("nC") + ", " 
+      span("positive_nC") + ", " 
     ),
     after: ".",
     n_symptoms: "NA",
@@ -741,7 +772,7 @@ var level2 = [
     variable: "pRpR",
     before: (
       "Because " + //span("name") + " " +  
-      span("pR")
+      span("positive_pR") + ", "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -767,7 +798,7 @@ var level2 = [
     variable: "nRpC",
     before: (
       //span("name") + " " + 
-      span("nR") + " because "
+      span("positive_nR") + " because "
     ),
     after: ".",
     n_symptoms: "NA",
@@ -780,7 +811,7 @@ var level2 = [
     variable: "nRpR",
     before: (
       "Because " + //span("name") + " " + 
-      span("nR")
+      span("positive_nR") + ", "
     ),
     after: ".",
     n_symptoms: "NA",

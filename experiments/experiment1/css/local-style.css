@@ -2,6 +2,10 @@ button {
 	margin: 10px;
 }
 
+.history {
+  color: lightgray;
+}
+
 .ui-slider-handle:focus {
 	outline: none;
 }
