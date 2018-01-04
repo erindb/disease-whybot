@@ -719,6 +719,10 @@ var level2 = [
     variable: "nCpC",
     before: (
       //span("name") + " " + 
+      // "<span class='history'>" +
+      // span("name") + " has " + span("D") + ".<br/>" + 
+      // span("positive_pC") + ".<br/>" +
+      // "</span>" +
       span("positive_nC") + " because "
     ),
     after: ".",
@@ -732,6 +736,10 @@ var level2 = [
     variable: "nCnC",
     before: (
       //span("name") + " " +  
+      // "<span class='history'>" +
+      // span("name") + " has " + span("D") + ".<br/>" + 
+      // span("positive_pC") + ".<br/>" +
+      // "</span>" +
       span("negated_nC") + " because " 
     ),
     after: ".",
@@ -745,6 +753,10 @@ var level2 = [
     variable: "nCpR",
     before: (
       "Because " + //span("name") + " " + 
+      // "<span class='history'>" +
+      // span("name") + " has " + span("D") + ".<br/>" + 
+      // span("positive_pC") + ".<br/>" +
+      // "</span>" +
       span("positive_nC") + ", " 
     ),
     after: ".",
@@ -759,6 +771,10 @@ var level2 = [
     variable: "pRnC",
     before: (
       //span("name") + " " +  
+      // "<span class='history'>" +
+      // span("name") + " has " + span("D") + ".<br/>" + 
+      // span("positive_pC") + ".<br/>" +
+      // "</span>" +
       span("negated_pR") + " because "
     ),
     after: ".",
@@ -771,6 +787,10 @@ var level2 = [
     trial_level: 2,
     variable: "pRpR",
     before: (
+      // "<span class='history'>" +
+      // span("name") + " has " + span("D") + ".<br/>" + 
+      // span("positive_pC") + ".<br/>" +
+      // "</span>" +
       "Because " + //span("name") + " " +  
       span("positive_pR") + ", "
     ),
@@ -784,6 +804,10 @@ var level2 = [
     trial_level: 2,
     variable: "pRnR",
     before: (
+      // "<span class='history'>" +
+      // span("name") + " has " + span("D") + ".<br/>" + 
+      // span("positive_pC") + ".<br/>" +
+      // "</span>" +
       "Because " + //span("name") + " " +  
       span("negated_pR") + ", "
     ),
@@ -798,6 +822,10 @@ var level2 = [
     variable: "nRpC",
     before: (
       //span("name") + " " + 
+      // "<span class='history'>" +
+      // span("name") + " has " + span("D") + ".<br/>" + 
+      // span("positive_pC") + ".<br/>" +
+      // "</span>" +
       span("positive_nR") + " because "
     ),
     after: ".",
@@ -810,6 +838,10 @@ var level2 = [
     trial_level: 2,
     variable: "nRpR",
     before: (
+      // "<span class='history'>" +
+      // span("name") + " has " + span("D") + ".<br/>" + 
+      // span("positive_pC") + ".<br/>" +
+      // "</span>" +
       "Because " + //span("name") + " " + 
       span("positive_nR") + ", "
     ),
@@ -823,6 +855,10 @@ var level2 = [
     trial_level: 2,
     variable: "nRnR",
     before: (
+      // "<span class='history'>" +
+      // span("name") + " has " + span("D") + ".<br/>" + 
+      // span("positive_pC") + ".<br/>" +
+      // "</span>" +
       "Because " + //span("name") + " " + 
       span("negated_nR") + ", "
     ),
@@ -1388,7 +1424,12 @@ function init() {
     screenUW: exp.width
   };
 
-  exp.disease = _.sample(["a cold", "cancer", "depression", "diabetes"]);
+  exp.disease = _.sample([
+    "a cold",
+    "cancer",
+    "depression",
+    "diabetes"
+  ]);
 
   exp.structure = [
     "i0",
