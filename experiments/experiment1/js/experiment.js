@@ -669,7 +669,7 @@ var level2 = [
     before: (
       //span("name") + " " + 
       "<span class='history'>" +
-      // span("name") + " has " + span("D") + ".<br/>" + 
+      span("name") + " has " + span("D") + ".<br/>" + 
       span("positive_pC").trim() + ".<br/>" +
       "</span>" +
       span("positive_pC").trim() + " because "
@@ -686,7 +686,7 @@ var level2 = [
     before: (
       //span("name") + " " + 
       "<span class='history'>" +
-      // span("name") + " does not have " + span("D") + ".<br/>" +
+      span("name") + " does not have " + span("D") + ".<br/>" +
       span("negated_pC").trim() + ".<br/>" +
       "</span>" + 
       span("negated_pC").trim() + " because " // placeholder 
@@ -720,7 +720,7 @@ var level2 = [
     before: (
       span("name") + " " + 
       "<span class='history'>" +
-      // span("name") + " does not have " + span("D") + ".<br/>" + 
+      span("name") + " does not have " + span("D") + ".<br/>" + 
       span("positive_nC").trim() + ".<br/>" +
       "</span>" +
       span("positive_nC").trim() + " because "
@@ -737,7 +737,7 @@ var level2 = [
     before: (
       span("name") + " " +  
       "<span class='history'>" +
-      // span("name") + " has " + span("D") + ".<br/>" + 
+      span("name") + " has " + span("D") + ".<br/>" + 
       span("negated_nC").trim() + ".<br/>" +
       "</span>" +
       span("negated_nC").trim() + " because " 
@@ -788,7 +788,7 @@ var level2 = [
     variable: "pRpR",
     before: (
       "<span class='history'>" +
-      // span("name") + " has " + span("D") + ".<br/>" + 
+      span("name") + " has " + span("D") + ".<br/>" + 
       span("positive_pR").trim() + ".<br/>" +
       "</span>" +
       "Because " + //span("name") + " " +  
@@ -805,7 +805,7 @@ var level2 = [
     variable: "pRnR",
     before: (
       "<span class='history'>" +
-      // span("name") + " does not have " + span("D") + ".<br/>" + 
+      span("name") + " does not have " + span("D") + ".<br/>" + 
       span("negated_pR").trim() + ".<br/>" +
       "</span>" +
       "Because " + //span("name") + " " +  
@@ -839,7 +839,7 @@ var level2 = [
     variable: "nRpR",
     before: (
       "<span class='history'>" +
-      // span("name") + " does not have " + span("D") + ".<br/>" + 
+      span("name") + " does not have " + span("D") + ".<br/>" + 
       span("positive_nR").trim() + ".<br/>" +
       "</span>" +
       "Because " + //span("name") + " " + 
