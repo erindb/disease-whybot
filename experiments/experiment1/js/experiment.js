@@ -306,7 +306,7 @@ var replace_pronouns = function(sentence, before_text) {
         if (named) {
           token.new_text = "<span class='variable_word his'>{{}}</span>";
         } else {
-          token.new_text = "<span class='variable_word name'>{{}}'s</span>"
+          token.new_text = "<span class='variable_word name'>{{}}</span>'s"
           named = true
         }
       } else if (pos=="PRP") {
@@ -821,7 +821,7 @@ var level2 = [
     trial_level: 2,
     variable: "nRpC",
     before: (
-      span("name") + " " + 
+      //span("name") + " " + 
       "<span class='history'>" +
       span("name") + " does not have " + span("D") + ".<br/>" + 
       span("positive_nR").trim() + ".<br/>" +
