@@ -76,7 +76,7 @@ var get_nlp_data = function(response, full_sentence, callback) {
       console.log('POST failed.');
       callback(response, "failure");
     },
-    timeout: 2000
+    timeout: 5000
   });
 };
 
@@ -400,15 +400,15 @@ function parse_and_continue(datum_index, trial_data, final_callback) {
         // var transformed_response = transform_to_3rd_plural(parse, response, datum.before_text);
         // datum.transformed_response = transformed_response;
         var negation_data = negate(response, parse, datum.before_text);
-        datum.negated_response = negation_data.negation;
-        datum.positive_response = negation_data.positive;
+        datum.negated_response = negation_data.negation.trim();
+        datum.positive_response = negation_data.positive.trim();
         datum.parse_error = false;
       } else if (status=="failure") {
         console.log("post failed");
         // datum.transformed_response = response;
         var negation_data = negate(response);
-        datum.negated_response = negation_data.negation;
-        datum.positive_response = negation_data.positive;
+        datum.negated_response = negation_data.negation.trim();
+        datum.positive_response = negation_data.positive.trim();
         // datum.negated_response = negate(response);
         datum.parse_error = true;
       } else {
@@ -718,7 +718,7 @@ var level2 = [
     trial_level: 2,
     variable: "nCpC",
     before: (
-      span("name") + " " + 
+      //span("name") + " " + 
       "<span class='history'>" +
       span("name") + " does not have " + span("D") + ".<br/>" + 
       span("positive_nC").trim() + ".<br/>" +
@@ -735,7 +735,7 @@ var level2 = [
     trial_level: 2,
     variable: "nCnC",
     before: (
-      span("name") + " " +  
+      // span("name") + " " +  
       "<span class='history'>" +
       span("name") + " has " + span("D") + ".<br/>" + 
       span("negated_nC").trim() + ".<br/>" +
@@ -770,7 +770,7 @@ var level2 = [
     trial_level: 2,
     variable: "pRnC",
     before: (
-      span("name") + " " +  
+      //span("name") + " " +  
       "<span class='history'>" +
       // span("name") + " does not have " + span("D") + ".<br/>" + 
       span("negated_pR").trim() + ".<br/>" +
