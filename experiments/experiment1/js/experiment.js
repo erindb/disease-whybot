@@ -1413,9 +1413,9 @@ function init() {
   };
 
   exp.disease = _.sample([
-    "a cold",
-    "cancer",
-    "depression",
+    "the flu",
+    "lung cancer",
+    "heart disease",
     "diabetes"
   ]);
 
