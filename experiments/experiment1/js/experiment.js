@@ -342,7 +342,7 @@ function open_feedback() {
 }
 
 function maybe_allow_skip() {
-  if ($("#feedback").val() == "impossible") {
+  if ($("#feedback").val() == "impossible" || $("#feedback").val() == "weird") {
   	$("#skip_button").show();
   };
 }
@@ -988,7 +988,7 @@ function make_slides(f) {
             return {
               response: response,
               is_valid: is_valid,
-              feedback: feedback,
+              parser_feedback: feedback,
               secondary_response: "NA",
               secondary_response_type: "NA"
             };
@@ -1073,7 +1073,7 @@ function make_slides(f) {
               return {
                 response: response,
                 is_valid: is_valid,
-                feedback: feedback,
+                parser_feedback: feedback,
                 secondary_response: adverb,
                 secondary_response_type: "adverb",
                 variable: stim.variable + i
@@ -1129,7 +1129,7 @@ function make_slides(f) {
             return {
               response: response,
               is_valid: is_valid,
-              feedback: feedback,
+              parser_feedback: feedback,
               secondary_response: "NA",
               secondary_response_type: "NA"
             };
@@ -1183,7 +1183,7 @@ function make_slides(f) {
             return {
               response: response,
               is_valid: is_valid,
-              feedback: feedback,
+              parser_feedback: feedback,
               secondary_response: "NA",
               secondary_response_type: "NA"
             };
