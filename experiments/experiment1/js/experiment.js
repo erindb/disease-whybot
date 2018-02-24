@@ -1,18 +1,6 @@
-var DEBUG = true;
+var DEBUG = false;
 var debug = function(string) {
   if (DEBUG) {console.log(string)};
-};
-
-// put in an example json string to parse
-// make the server bigger
-
-var test = function() {
-  exp.name = "Bob";
-  var example_parse = {"sentences":[{"index":0,"basicDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":2,"dependentGloss":"thinks"},{"dep":"nsubj","governor":2,"governorGloss":"thinks","dependent":1,"dependentGloss":"He"},{"dep":"nsubj","governor":4,"governorGloss":"cure","dependent":3,"dependentGloss":"they"},{"dep":"ccomp","governor":2,"governorGloss":"thinks","dependent":4,"dependentGloss":"cure"},{"dep":"dobj","governor":4,"governorGloss":"cure","dependent":5,"dependentGloss":"colds"},{"dep":"punct","governor":2,"governorGloss":"thinks","dependent":6,"dependentGloss":"."}],"enhancedDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":2,"dependentGloss":"thinks"},{"dep":"nsubj","governor":2,"governorGloss":"thinks","dependent":1,"dependentGloss":"He"},{"dep":"nsubj","governor":4,"governorGloss":"cure","dependent":3,"dependentGloss":"they"},{"dep":"ccomp","governor":2,"governorGloss":"thinks","dependent":4,"dependentGloss":"cure"},{"dep":"dobj","governor":4,"governorGloss":"cure","dependent":5,"dependentGloss":"colds"},{"dep":"punct","governor":2,"governorGloss":"thinks","dependent":6,"dependentGloss":"."}],"enhancedPlusPlusDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":2,"dependentGloss":"thinks"},{"dep":"nsubj","governor":2,"governorGloss":"thinks","dependent":1,"dependentGloss":"He"},{"dep":"nsubj","governor":4,"governorGloss":"cure","dependent":3,"dependentGloss":"they"},{"dep":"ccomp","governor":2,"governorGloss":"thinks","dependent":4,"dependentGloss":"cure"},{"dep":"dobj","governor":4,"governorGloss":"cure","dependent":5,"dependentGloss":"colds"},{"dep":"punct","governor":2,"governorGloss":"thinks","dependent":6,"dependentGloss":"."}],"tokens":[{"index":1,"word":"He","originalText":"He","lemma":"he","characterOffsetBegin":0,"characterOffsetEnd":2,"pos":"PRP","ner":"O","speaker":"PER0","before":"","after":" "},{"index":2,"word":"thinks","originalText":"thinks","lemma":"think","characterOffsetBegin":3,"characterOffsetEnd":9,"pos":"VBZ","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":3,"word":"they","originalText":"they","lemma":"they","characterOffsetBegin":10,"characterOffsetEnd":14,"pos":"PRP","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":4,"word":"cure","originalText":"cure","lemma":"cure","characterOffsetBegin":15,"characterOffsetEnd":19,"pos":"VBP","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":5,"word":"colds","originalText":"colds","lemma":"cold","characterOffsetBegin":20,"characterOffsetEnd":25,"pos":"NNS","ner":"O","speaker":"PER0","before":" ","after":""},{"index":6,"word":".","originalText":".","lemma":".","characterOffsetBegin":25,"characterOffsetEnd":26,"pos":".","ner":"O","speaker":"PER0","before":"","after":" "}]},{"index":1,"basicDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":2,"dependentGloss":"takes"},{"dep":"nsubj","governor":2,"governorGloss":"takes","dependent":1,"dependentGloss":"Bob"},{"dep":"dobj","governor":2,"governorGloss":"takes","dependent":3,"dependentGloss":"vitamins"},{"dep":"mark","governor":6,"governorGloss":"thinks","dependent":4,"dependentGloss":"because"},{"dep":"nsubj","governor":6,"governorGloss":"thinks","dependent":5,"dependentGloss":"he"},{"dep":"advcl","governor":2,"governorGloss":"takes","dependent":6,"dependentGloss":"thinks"},{"dep":"nsubj","governor":8,"governorGloss":"cure","dependent":7,"dependentGloss":"they"},{"dep":"ccomp","governor":6,"governorGloss":"thinks","dependent":8,"dependentGloss":"cure"},{"dep":"dobj","governor":8,"governorGloss":"cure","dependent":9,"dependentGloss":"colds"},{"dep":"punct","governor":2,"governorGloss":"takes","dependent":10,"dependentGloss":"."}],"enhancedDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":2,"dependentGloss":"takes"},{"dep":"nsubj","governor":2,"governorGloss":"takes","dependent":1,"dependentGloss":"Bob"},{"dep":"dobj","governor":2,"governorGloss":"takes","dependent":3,"dependentGloss":"vitamins"},{"dep":"mark","governor":6,"governorGloss":"thinks","dependent":4,"dependentGloss":"because"},{"dep":"nsubj","governor":6,"governorGloss":"thinks","dependent":5,"dependentGloss":"he"},{"dep":"advcl:because","governor":2,"governorGloss":"takes","dependent":6,"dependentGloss":"thinks"},{"dep":"nsubj","governor":8,"governorGloss":"cure","dependent":7,"dependentGloss":"they"},{"dep":"ccomp","governor":6,"governorGloss":"thinks","dependent":8,"dependentGloss":"cure"},{"dep":"dobj","governor":8,"governorGloss":"cure","dependent":9,"dependentGloss":"colds"},{"dep":"punct","governor":2,"governorGloss":"takes","dependent":10,"dependentGloss":"."}],"enhancedPlusPlusDependencies":[{"dep":"ROOT","governor":0,"governorGloss":"ROOT","dependent":2,"dependentGloss":"takes"},{"dep":"nsubj","governor":2,"governorGloss":"takes","dependent":1,"dependentGloss":"Bob"},{"dep":"dobj","governor":2,"governorGloss":"takes","dependent":3,"dependentGloss":"vitamins"},{"dep":"mark","governor":6,"governorGloss":"thinks","dependent":4,"dependentGloss":"because"},{"dep":"nsubj","governor":6,"governorGloss":"thinks","dependent":5,"dependentGloss":"he"},{"dep":"advcl:because","governor":2,"governorGloss":"takes","dependent":6,"dependentGloss":"thinks"},{"dep":"nsubj","governor":8,"governorGloss":"cure","dependent":7,"dependentGloss":"they"},{"dep":"ccomp","governor":6,"governorGloss":"thinks","dependent":8,"dependentGloss":"cure"},{"dep":"dobj","governor":8,"governorGloss":"cure","dependent":9,"dependentGloss":"colds"},{"dep":"punct","governor":2,"governorGloss":"takes","dependent":10,"dependentGloss":"."}],"tokens":[{"index":1,"word":"Bob","originalText":"Bob","lemma":"Bob","characterOffsetBegin":27,"characterOffsetEnd":30,"pos":"NNP","ner":"PERSON","speaker":"PER0","before":" ","after":" "},{"index":2,"word":"takes","originalText":"takes","lemma":"take","characterOffsetBegin":31,"characterOffsetEnd":36,"pos":"VBZ","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":3,"word":"vitamins","originalText":"vitamins","lemma":"vitamin","characterOffsetBegin":37,"characterOffsetEnd":45,"pos":"NNS","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":4,"word":"because","originalText":"because","lemma":"because","characterOffsetBegin":46,"characterOffsetEnd":53,"pos":"IN","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":5,"word":"he","originalText":"he","lemma":"he","characterOffsetBegin":54,"characterOffsetEnd":56,"pos":"PRP","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":6,"word":"thinks","originalText":"thinks","lemma":"think","characterOffsetBegin":57,"characterOffsetEnd":63,"pos":"VBZ","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":7,"word":"they","originalText":"they","lemma":"they","characterOffsetBegin":64,"characterOffsetEnd":68,"pos":"PRP","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":8,"word":"cure","originalText":"cure","lemma":"cure","characterOffsetBegin":69,"characterOffsetEnd":73,"pos":"VBP","ner":"O","speaker":"PER0","before":" ","after":" "},{"index":9,"word":"colds","originalText":"colds","lemma":"cold","characterOffsetBegin":74,"characterOffsetEnd":79,"pos":"NNS","ner":"O","speaker":"PER0","before":" ","after":""},{"index":10,"word":".","originalText":".","lemma":".","characterOffsetBegin":79,"characterOffsetEnd":80,"pos":".","ner":"O","speaker":"PER0","before":"","after":""}]}],"corefs":{"5":[{"id":0,"text":"He","type":"PRONOMINAL","number":"SINGULAR","gender":"MALE","animacy":"ANIMATE","startIndex":1,"endIndex":2,"headIndex":1,"sentNum":1,"position":[1,1],"isRepresentativeMention":true},{"id":5,"text":"he","type":"PRONOMINAL","number":"SINGULAR","gender":"MALE","animacy":"ANIMATE","startIndex":5,"endIndex":6,"headIndex":5,"sentNum":2,"position":[2,3],"isRepresentativeMention":false}],"6":[{"id":1,"text":"they","type":"PRONOMINAL","number":"PLURAL","gender":"UNKNOWN","animacy":"ANIMATE","startIndex":3,"endIndex":4,"headIndex":3,"sentNum":1,"position":[1,2],"isRepresentativeMention":true},{"id":6,"text":"they","type":"PRONOMINAL","number":"PLURAL","gender":"UNKNOWN","animacy":"ANIMATE","startIndex":7,"endIndex":8,"headIndex":7,"sentNum":2,"position":[2,4],"isRepresentativeMention":false}]}};
-  var response = "he thinks they cure colds";
-  console.log(response);
-  var negated_response = negate(response, example_parse, "Bob takes vitamins because ");
-  console.log(negated_response);
 };
 
 var experiment_label = "disease_whybot_3";
@@ -76,7 +64,7 @@ var get_nlp_data = function(response, full_sentence, callback) {
       console.log('POST failed.');
       callback(response, "failure");
     },
-    timeout: 2000
+    timeout: 5000
   });
 };
 
@@ -354,7 +342,7 @@ function open_feedback() {
 }
 
 function maybe_allow_skip() {
-  if ($("#feedback").val() == "impossible") {
+  if ($("#feedback").val() == "impossible" || $("#feedback").val() == "weird") {
   	$("#skip_button").show();
   };
 }
@@ -400,15 +388,15 @@ function parse_and_continue(datum_index, trial_data, final_callback) {
         // var transformed_response = transform_to_3rd_plural(parse, response, datum.before_text);
         // datum.transformed_response = transformed_response;
         var negation_data = negate(response, parse, datum.before_text);
-        datum.negated_response = negation_data.negation;
-        datum.positive_response = negation_data.positive;
+        datum.negated_response = negation_data.negation.trim();
+        datum.positive_response = negation_data.positive.trim();
         datum.parse_error = false;
       } else if (status=="failure") {
         console.log("post failed");
         // datum.transformed_response = response;
         var negation_data = negate(response);
-        datum.negated_response = negation_data.negation;
-        datum.positive_response = negation_data.positive;
+        datum.negated_response = negation_data.negation.trim();
+        datum.positive_response = negation_data.positive.trim();
         // datum.negated_response = negate(response);
         datum.parse_error = true;
       } else {
@@ -468,8 +456,14 @@ var negate_main_verb = function(sentence) {
   for (var i=0; i<main_verb_dependents.length; i++) {
     var dependency = main_verb_dependents[i];
     if (dependency.dep == "neg") {
+      // if main verb is "ca" or "wo" change to "can" and "will"
       var negation_index = index(dependency.dependent);
       negated_sentence.tokens[negation_index].new_text = "";
+      if (negated_sentence.tokens[negation_index-1].word=="ca") {
+        negated_sentence.tokens[negation_index-1].new_text = "can";
+      } else if (negated_sentence.tokens[negation_index-1].word=="wo") {
+        negated_sentence.tokens[negation_index-1].new_text = "will";
+      }
       already_has_negation = true
     }
   }
@@ -718,7 +712,6 @@ var level2 = [
     trial_level: 2,
     variable: "nCpC",
     before: (
-      // span("name") + " " + 
       "<span class='history'>" +
       span("name") + " does not have " + span("D") + ".<br/>" + 
       span("positive_nC").trim() + ".<br/>" +
@@ -770,7 +763,6 @@ var level2 = [
     trial_level: 2,
     variable: "pRnC",
     before: (
-      // span("name") + " " +  
       "<span class='history'>" +
       // span("name") + " does not have " + span("D") + ".<br/>" + 
       span("negated_pR").trim() + ".<br/>" +
@@ -890,7 +882,7 @@ function make_slides(f) {
      start: function() {
       exp.startT = Date.now();
       $("#total-num").html(exp.numTrials);
-      $("#total-time").html(7);
+      $("#total-time").html(6);
      }
   });
 
@@ -1000,7 +992,7 @@ function make_slides(f) {
             return {
               response: response,
               is_valid: is_valid,
-              feedback: feedback,
+              parser_feedback: feedback,
               secondary_response: "NA",
               secondary_response_type: "NA"
             };
@@ -1085,7 +1077,7 @@ function make_slides(f) {
               return {
                 response: response,
                 is_valid: is_valid,
-                feedback: feedback,
+                parser_feedback: feedback,
                 secondary_response: adverb,
                 secondary_response_type: "adverb",
                 variable: stim.variable + i
@@ -1141,7 +1133,7 @@ function make_slides(f) {
             return {
               response: response,
               is_valid: is_valid,
-              feedback: feedback,
+              parser_feedback: feedback,
               secondary_response: "NA",
               secondary_response_type: "NA"
             };
@@ -1195,7 +1187,7 @@ function make_slides(f) {
             return {
               response: response,
               is_valid: is_valid,
-              feedback: feedback,
+              parser_feedback: feedback,
               secondary_response: "NA",
               secondary_response_type: "NA"
             };
@@ -1340,6 +1332,7 @@ function make_slides(f) {
         problems: $("#problems").val(),
         fairprice: $("#fairprice").val(),
         comments : $("#comments").val(),
+        how_did_it_go: $("#how_did_it_go").val(),
         experiment_name: exp.name,
         experiment_gender: exp.gender,
         hasty_subject: exp.hasty_subject
@@ -1387,17 +1380,17 @@ function make_slides(f) {
 
 /// init ///
 function init() {
-  test();
+  //test();
 
   repeatWorker = false;
-  (function(){
-      var ut_id = "erindb-whybot-20170413";
-      if (UTWorkerLimitReached(ut_id)) {
-        $('.slide').empty();
-        repeatWorker = true;
-        alert("You have already completed the maximum number of HITs allowed by this requester. Please click 'Return HIT' to avoid any impact on your approval rating.");
-      }
-  })();
+  // (function(){
+  //     var ut_id = "erindb-whybot-20170413";
+  //     if (UTWorkerLimitReached(ut_id)) {
+  //       $('.slide').empty();
+  //       repeatWorker = true;
+  //       alert("You have already completed the maximum number of HITs allowed by this requester. Please click 'Return HIT' to avoid any impact on your approval rating.");
+  //     }
+  // })();
 
   $('input[type="text"]')
     // event handler
@@ -1425,9 +1418,9 @@ function init() {
   };
 
   exp.disease = _.sample([
-    "a cold",
-    "cancer",
-    "depression",
+    "the flu",
+    "lung cancer",
+    "heart disease",
     "diabetes"
   ]);
 
