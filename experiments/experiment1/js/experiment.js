@@ -890,6 +890,7 @@ function make_slides(f) {
     name : "instructions",
     start : function() {
       $(".err").hide();
+      $(".because_of_error").hide();
       exp.hasty_subject = false;
     },
     button : function() {
@@ -922,6 +923,7 @@ function make_slides(f) {
       this.stim = stim;
 
       $(".err").hide();
+      $(".because_of_error").hide();
       $("#processing").hide();
       $("#skip_button").hide();
       $("#wrong").hide();
@@ -1272,48 +1274,53 @@ function make_slides(f) {
       // which may or may not work and needs its own
       // callback.
 
-      _s.rt = (Date.now() - _s.startTime)/1000;
+      if ($("#response").val().slice(0,3).toLowerCase()=="of ") {
+        $(".because_of_error").show()
+      } else {
 
-      var is_valid = true;
-      var trial_data = [];
-      _.forEach(_.keys(_s.response_handlers), function(variable) {
-        var datum = _s.response_handlers[variable]();
-        // console.log(datum);
-        if (datum.is_valid==false) {is_valid=false};
-        datum = _.extend(_.clone(_s.stim), datum);
-        datum = _.extend(_.clone(datum), {
-          // transformed_response: "NA",
-          negated_response: "NA",
-          parse_error: "NA",
-          time: Date.now(),
-          rt: _s.rt,
-          userid: userid,
-          start: exp.startT,
-          before_text: $("#before_" + variable).text(),
-          after_text: $("#after_" + variable).text()
+        _s.rt = (Date.now() - _s.startTime)/1000;
+
+        var is_valid = true;
+        var trial_data = [];
+        _.forEach(_.keys(_s.response_handlers), function(variable) {
+          var datum = _s.response_handlers[variable]();
+          // console.log(datum);
+          if (datum.is_valid==false) {is_valid=false};
+          datum = _.extend(_.clone(_s.stim), datum);
+          datum = _.extend(_.clone(datum), {
+            // transformed_response: "NA",
+            negated_response: "NA",
+            parse_error: "NA",
+            time: Date.now(),
+            rt: _s.rt,
+            userid: userid,
+            start: exp.startT,
+            before_text: $("#before_" + variable).text(),
+            after_text: $("#after_" + variable).text()
+          });
+          // stim variable is less specific
+          // than this response-handler variable.
+          datum.variable = variable;
+          trial_data.push(datum);
         });
-        // stim variable is less specific
-        // than this response-handler variable.
-        datum.variable = variable;
-        trial_data.push(datum);
-      });
-      if (is_valid) {
-        if (_s.stim.query_type=="text" ||
-                _s.stim.query_type=="symptoms_text") {
-          // try to parse the text, then run final callback
-          parse_and_continue(
-            0,
-            trial_data,
-            _s.final_callback
-          );
-          return;
+        if (is_valid) {
+          if (_s.stim.query_type=="text" ||
+                  _s.stim.query_type=="symptoms_text") {
+            // try to parse the text, then run final callback
+            parse_and_continue(
+              0,
+              trial_data,
+              _s.final_callback
+            );
+            return;
+          } else {
+            _s.final_callback(true, trial_data);
+            return;
+          }
         } else {
-          _s.final_callback(true, trial_data);
+          _s.final_callback(false, trial_data);
           return;
         }
-      } else {
-        _s.final_callback(false, trial_data);
-        return;
       }
     }
   });
