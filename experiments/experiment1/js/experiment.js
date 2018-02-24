@@ -718,7 +718,7 @@ var level2 = [
     trial_level: 2,
     variable: "nCpC",
     before: (
-      span("name") + " " + 
+      // span("name") + " " + 
       "<span class='history'>" +
       span("name") + " does not have " + span("D") + ".<br/>" + 
       span("positive_nC").trim() + ".<br/>" +
@@ -735,7 +735,7 @@ var level2 = [
     trial_level: 2,
     variable: "nCnC",
     before: (
-      span("name") + " " +  
+      // span("name") + " " +  
       "<span class='history'>" +
       span("name") + " has " + span("D") + ".<br/>" + 
       span("negated_nC").trim() + ".<br/>" +
@@ -770,7 +770,7 @@ var level2 = [
     trial_level: 2,
     variable: "pRnC",
     before: (
-      span("name") + " " +  
+      // span("name") + " " +  
       "<span class='history'>" +
       // span("name") + " does not have " + span("D") + ".<br/>" + 
       span("negated_pR").trim() + ".<br/>" +
