@@ -890,7 +890,7 @@ function make_slides(f) {
      start: function() {
       exp.startT = Date.now();
       $("#total-num").html(exp.numTrials);
-      $("#total-time").html(7);
+      $("#total-time").html(6);
      }
   });
 
