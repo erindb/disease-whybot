@@ -1334,6 +1334,7 @@ function make_slides(f) {
         problems: $("#problems").val(),
         fairprice: $("#fairprice").val(),
         comments : $("#comments").val(),
+        how_did_it_go: $("#how_did_it_go").val(),
         experiment_name: exp.name,
         experiment_gender: exp.gender,
         hasty_subject: exp.hasty_subject
