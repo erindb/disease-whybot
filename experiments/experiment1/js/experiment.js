@@ -456,8 +456,14 @@ var negate_main_verb = function(sentence) {
   for (var i=0; i<main_verb_dependents.length; i++) {
     var dependency = main_verb_dependents[i];
     if (dependency.dep == "neg") {
+      // if main verb is "ca" or "wo" change to "can" and "will"
       var negation_index = index(dependency.dependent);
       negated_sentence.tokens[negation_index].new_text = "";
+      if (negated_sentence.tokens[negation_index-1].word=="ca") {
+        negated_sentence.tokens[negation_index-1].new_text = "can";
+      } else if (negated_sentence.tokens[negation_index-1].word=="wo") {
+        negated_sentence.tokens[negation_index-1].new_text = "will";
+      }
       already_has_negation = true
     }
   }
