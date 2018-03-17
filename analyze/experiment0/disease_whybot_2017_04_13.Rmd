@@ -20,6 +20,7 @@ library(igraph)
 library(tm)
 require(proxy)
 library(ggrepel)
+library(hunspell)
 ```
 
 ```{r}
@@ -283,9 +284,62 @@ agg_manual_merge = read.csv("../data/disease_whybot_2017_04_13_wide_form_manuall
 * head words? phrase embeddings?
 
 ```{r}
-library(hunspell)
-agg_auto_merge = agg_no_merge %>%
-  mutate()
+long_form = read.csv("../data/disease_whybot_2017_04_13.csv")
+
+cleanup_response = function(var, uid) {
+  row = (long_form %>% filter(variable==var & userid==uid))[1,]
+  response = row$transformed_response[[1]]
+  
+  if (is.na(response)) {return(NA)}
+  
+  ## to lower case
+  response = tolower(response)
+  
+  ## contractions
+  response = gsub("can't", "cannot", response, ignore.case=T)
+  response = gsub("n't", " not", response, ignore.case=T)
+
+  ## spelling correction
+  sentence = with(row, paste(before_text, response, after_text, sep=""))
+  bad_words = hunspell_find(sentence)
+  corrections = lapply(hunspell_suggest(bad_words[[1]]), function(correct_list) {
+    return(correct_list[1])
+  })
+  if (length(corrections)>0) {
+    for (i in 1:length(corrections)) {
+      correct = corrections[[i]]
+      incorrect = bad_words[[1]][[i]]
+      response = gsub(incorrect, correct, response)
+    }
+  }
+  
+  ## lemmatize
+  paste(sapply(strsplit(response, " ")[[1]], hunspell_stem), collapse=" ")
+
+  ## remove gender words
+  response = gsub("(^| )(her|him|his|she|he)(self)?( |$)", " ", response, ignore.case=T)
+  response = gsub("^ ", "", response, ignore.case=T)
+  response = gsub(" $)", "", response, ignore.case=T)
+
+  ## remove stop words
+  response = gsub("(^| )(a|the|is|be|have|has|in|was)( |$)", " ", response, ignore.case=T)
+  response = gsub("^ ", "", response, ignore.case=T)
+  response = gsub(" $)", "", response, ignore.case=T)
+  response = gsub("(^| )(a|the|is|be|have|has|in|was)( |$)", " ", response, ignore.case=T)
+  response = gsub("^ ", "", response, ignore.case=T)
+  response = gsub(" $)", "", response, ignore.case=T)
+  response = gsub("[.,]", "", response, ignore.case=T)
+
+  return(response)
+}
+
+variables = c("A", "C", "D", "S0", "S1", "S2", "R")
+userids = unique(long_form$userid)
+
+long_form_minimized = expand.grid(var=variables, userid=userids, stringsAsFactors = F) %>%
+  mutate(response_merged = mapply(cleanup_response, var, userid))
+
+agg_auto_merge = long_form_minimized %>% spread(var, response_merged)
 ```
 
 ### Master graph
@@ -301,9 +355,9 @@ master_graph = function(agg, label, filtering_function, merge_strength=T, layout
     target = c(agg$D, agg$D,
                agg$S0, agg$S1, agg$S2,
                agg$A),
-    strength = c(agg$CD/1000, agg$AD,
-                 agg$DS0/1000, agg$DS1/1000, agg$DS2/1000,
-                 agg$cost),
+    # strength = c(agg$CD/1000, agg$AD,
+    #              agg$DS0/1000, agg$DS1/1000, agg$DS2/1000,
+    #              agg$cost),
     type = rep(c("cause", "prevent", 
                  "cause", "cause", "cause", 
                  "prevent"), each=nrow(agg))
@@ -396,27 +450,30 @@ master_graph = function(agg, label, filtering_function, merge_strength=T, layout
   )
   silent = dev.off()
 }
-master_graph(agg_manual_merge, "manual_merge", function(agg) {return(agg)})
-master_graph(agg_manual_merge, "manual_merge_diabetes_clusterA", function(agg) {
-  return(agg %>% filter(userid %in% c(1, 10, 13, 35, 39, 44, 48, 58)))
-}, merge_strength = F, layout="l", threshold = 1)
-master_graph(agg_manual_merge, "manual_merge_diabetes_clusterB", function(agg) {
-  return(agg %>% filter(userid %in% c(9, 32, 34, 37, 42, 46)))
-}, merge_strength = F, layout="l", threshold = 1)
 
-master_graph(agg_manual_merge, "manual_merge_cancer_clusterA", function(agg) {
-  return(agg %>% filter(userid %in% c(3, 36, 38, 47)))
-}, merge_strength = F, layout="l", threshold = 1)
-master_graph(agg_manual_merge, "manual_merge_cancer_clusterB", function(agg) {
-  return(agg %>% filter(userid %in% c(29, 25, 40, 62, 17, 8, 45, 21, 51, 27)))
-}, merge_strength = F, layout="l", threshold = 1)
+# master_graph(agg_manual_merge, "manual_merge", function(agg) {return(agg)})
+master_graph(agg_auto_merge, "auto_merge", function(agg) {return(agg)})
 
-master_graph(agg_manual_merge, "manual_merge_depression_clusterA", function(agg) {
-  return(agg %>% filter(userid %in% c(12, 26, 49, 28, 60, 20, 19, 41, 11, 55, 30, 4, 54, 61)))
-}, merge_strength = T, layout="l", threshold = 1)
-master_graph(agg_manual_merge, "manual_merge_depression_clusterB", function(agg) {
-  return(agg %>% filter(userid %in% c(57, 18, 50)))
-}, merge_strength = T, layout="l", threshold = 1)
+# master_graph(agg_manual_merge, "manual_merge_diabetes_clusterA", function(agg) {
+#   return(agg %>% filter(userid %in% c(1, 10, 13, 35, 39, 44, 48, 58)))
+# }, merge_strength = F, layout="l", threshold = 1)
+# master_graph(agg_manual_merge, "manual_merge_diabetes_clusterB", function(agg) {
+#   return(agg %>% filter(userid %in% c(9, 32, 34, 37, 42, 46)))
+# }, merge_strength = F, layout="l", threshold = 1)
+# 
+# master_graph(agg_manual_merge, "manual_merge_cancer_clusterA", function(agg) {
+#   return(agg %>% filter(userid %in% c(3, 36, 38, 47)))
+# }, merge_strength = F, layout="l", threshold = 1)
+# master_graph(agg_manual_merge, "manual_merge_cancer_clusterB", function(agg) {
+#   return(agg %>% filter(userid %in% c(29, 25, 40, 62, 17, 8, 45, 21, 51, 27)))
+# }, merge_strength = F, layout="l", threshold = 1)
+# 
+# master_graph(agg_manual_merge, "manual_merge_depression_clusterA", function(agg) {
+#   return(agg %>% filter(userid %in% c(12, 26, 49, 28, 60, 20, 19, 41, 11, 55, 30, 4, 54, 61)))
+# }, merge_strength = T, layout="l", threshold = 1)
+# master_graph(agg_manual_merge, "manual_merge_depression_clusterB", function(agg) {
+#   return(agg %>% filter(userid %in% c(57, 18, 50)))
+# }, merge_strength = T, layout="l", threshold = 1)
 ```
 
 ### Similarity
@@ -489,7 +546,45 @@ draw_mds = function(agg, label) {
     ggtitle("MDS") + ylab("") + xlab("") + xlim(-.5, .7)
   ggsave(paste("graphs/mds_", label, ".png", sep=""), width=9, height=5)
 }
-draw_mds(agg_manual_merge, "manual_merge")
+# draw_mds(agg_manual_merge, "manual_merge")
+draw_mds(agg_auto_merge, "auto_merge")
+```
+
+```{r}
+agg = agg_auto_merge
+edges = data.frame(
+  source = c(agg$C, agg$A,
+             agg$D,  agg$D,  agg$D,
+             agg$R),
+  target = c(agg$D, agg$D,
+             agg$S0, agg$S1, agg$S2,
+             agg$A),
+  type = rep(c("cause", "prevent", 
+               "cause", "cause", "cause", 
+               "prevent"), each=nrow(agg))
+) %>% mutate(type_number = as.numeric(factor(type)))
+edges = edges %>% filter(target != "other" & source!="other" & source!="prevention")
+
+nodes = unique(c(char(edges$source), char(edges$target)))
+nodes = nodes[!(nodes %in% c("a cold", "cancer", "diabetes", "depression"))]
+
+all_connections = sapply(nodes, function(node) {
+  source_connections = edges %>% filter(source==node)
+  target_connections = edges %>% filter(target==node)
+  connections = c()
+  if (nrow(source_connections)>0) {
+    connections = c(connections,
+                    paste(source_connections$type, "of", source_connections$target))
+  }
+  if (nrow(target_connections)>0) {
+    connections = c(connections,
+                    paste(target_connections$source, target_connections$type, "this"))
+  }
+  gsub("  ", " ", paste(sort(unique(connections)), collapse="~~~"))
+})
+similar_structures = names(table(all_connections)[table(all_connections)>1])
+interesting_structures = char(similar_structures[!is.na(sapply(similar_structures, function(x) {grep("~~~", x)})==1)])
+all_connections[char(all_connections)%in%char(interesting_structures)]
 ```
 
 

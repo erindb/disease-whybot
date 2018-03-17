@@ -1,5 +1,6 @@
 *.DS_Store
 *.Rhistory
-data/disease_whybot*
+data/experiment0/disease_whybot*
 *.png
 collect-data/
+*.key
