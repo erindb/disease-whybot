@@ -1,0 +1,180 @@
+---
+title: "whybot graphs"
+author: "erin"
+output: html_document
+---
+
+```{r global_options, include=FALSE}
+rm(list=ls())
+knitr::opts_chunk$set(echo=F, warning=F, cache=F, message=F,
+                      sanitiz=T, fig.width = 5, fig.height = 3)
+```
+
+```{r load_settings}
+source("~/Settings/startup.R")
+library(igraph)
+```
+
+```{r}
+df = read.csv("../../data/experiment1/all_data.csv") %>%
+  mutate(response = char(response)) %>%
+  filter(!(workerid %in% c(3,4,5,6)))
+```
+
+```{r}
+df$positive_response = gsub(
+  "<span class='variable_word (name|him|he)'>\\{\\{\\}\\}</span>",
+  "P",
+  df$positive_response)
+df$positive_response = gsub(
+  "<span class='variable_word his'>\\{\\{\\}\\}</span>",
+  "P's",
+  df$positive_response)
+```
+
+
+```{r}
+# nodes = w0$response
+transforms = c("p", "n")
+frames = c("C", "R")
+n_link_types = length(transforms)*length(frames)
+
+graph_structure = data.frame(
+  transform1 = c(rep(rep(transforms, c(2,2)), 1),
+                 rep(rep(transforms, c(8,8)), 1)),
+  frame1 = c(rep(rep(frames, c(1,1)), 2),
+             rep(rep(frames, c(4,4)), 2)),
+  transform2 = c(rep("", n_link_types),
+                 rep(rep(transforms, c(2,2)), 4)),
+  frame2 = c(rep("", n_link_types),
+             rep(rep(frames, c(1,1)), 8)),
+  stringsAsFactors=F) %>%
+  filter(frame1==frame2 | transform1!=transform2) %>%
+  mutate(var1 = paste(transform1, frame1, sep=""),
+         var2 = paste(transform2, frame2, sep=""),
+         variable = paste(var1, var2, sep="")) %>%
+  mutate(source = ifelse(var2=="", "D", var1),
+         target = variable,
+         link_type = ifelse(var2=="", var1, var2))
+
+edge_types = matrix(c(graph_structure$source, graph_structure$target), ncol=2) %>%
+  t %>% c
+
+link_color_map = c(
+  pC = "blue",
+  pR = "skyblue",
+  nC = "red",
+  nR = "pink"
+)
+
+link_colors = link_color_map[graph_structure$link_type]
+
+abstract_graph = make_graph(edge_types, directed=F)
+
+node_types = names(V(abstract_graph))
+
+node_positions = data.frame(
+  variable = node_types,
+  r = c(3,1,1,5,5,0,2,0,0,0,2,4,6,6,6,4,6),
+  c = c(3,5,1,5,1,6,6,4,0,2,0,6,4,6,2,0,0)
+)
+
+abstract_layout = matrix(c(node_positions$r, node_positions$c), byrow=F, ncol=2)
+
+plot(abstract_graph,
+     vertex.size=1,
+     vertex.label.cex=0.7,
+     vertex.label.color="black",
+     vertex.label.dist=1.5,
+     edge.color=link_colors,
+     layout=abstract_layout)
+
+# layout_as_tree(abstract_graph)
+```
+
+```{r}
+# great examples: 10, 11, 17, 18, 19
+# tautological: 7
+# messy: 8, 12
+# worker_to_graph = 19
+
+for (worker_to_graph in unique(df$workerid)) {
+  w = df %>%
+    select(disease, completed, response, positive_response, variable, workerid) %>%
+    filter(workerid==worker_to_graph)
+  
+  n = w$positive_response
+  names(n) = w$variable
+  nodes = n[node_types]
+  nodes = unname(nodes)
+  nodes = ifelse(is.na(nodes), "NA", nodes)
+  
+  pdf(file=paste("graphs/s", worker_to_graph, ".pdf", sep=""))
+  plot(abstract_graph,
+       vertex.size=1,
+       vertex.label=nodes,
+       vertex.label.cex=0.5,
+       vertex.label.color="black",
+       vertex.label.dist=1.5,
+       edge.color=link_colors,
+       layout=abstract_layout)
+  dev.off()
+}
+```
+
+```{r}
+worker_to_graph = 15
+
+w = df %>%
+  select(disease, completed, response, positive_response, variable, workerid) %>%
+  filter(workerid==worker_to_graph) %>%
+  filter(!is.na(positive_response))
+responses = w$positive_response
+names(responses) = w$variable
+
+edges_df = graph_structure %>%
+  select(source, target, link_type) %>%
+  mutate(source = responses[source],
+         target = responses[target])
+edges = matrix(c(edges_df$source, edges_df$target), ncol=2) %>%
+  t %>% c
+
+link_colors = link_color_map[edges_df$link_type]
+
+g = make_graph(edges, directed=F)
+
+nodes = names(V(g))
+
+# get node locations
+row_pos = node_positions$r
+names(row_pos) = node_positions$variable
+col_pos = node_positions$c
+names(col_pos) = node_positions$variable
+
+nodes_df = w %>% group_by(positive_response) %>%
+  summarise(variable = variable[1])
+first_vars = nodes_df$variable
+names(first_vars) = nodes_df$positive_response
+
+positions = data.frame(
+  positive_response = nodes,
+  variable = first_vars[nodes],
+  stringsAsFactors = F) %>%
+  mutate(r = row_pos[char(variable)],
+         c = col_pos[char(variable)])
+
+g_layout = matrix(c(positions$r, positions$c), byrow=F, ncol=2)
+
+# 
+plot(g,
+     vertex.size=1,
+     vertex.label.cex=0.35,
+     vertex.label.color="black",
+     vertex.label.dist=1.5,
+     edge.color=link_colors,
+     layout=g_layout)
+```
+
+
+
+
