@@ -11,8 +11,12 @@ knitr::opts_chunk$set(echo=F, warning=F, cache=F, message=F,
 ```
 
 ```{r load_settings}
-source("~/Settings/startup.R")
+library(tidyr)
+library(dplyr)
+library(ggplot2)
 library(igraph)
+char = as.character
+num = function(x) {return(as.numeric(as.character(x)))}
 ```
 
 ```{r}
@@ -55,7 +59,26 @@ graph_structure = data.frame(
          variable = paste(var1, var2, sep="")) %>%
   mutate(source = ifelse(var2=="", "D", var1),
          target = variable,
-         link_type = ifelse(var2=="", var1, var2))
+         link_type = ifelse(var2=="", var1, var2)) %>%
+  select(source, target, link_type)
+
+negations = graph_structure %>% 
+  filter(link_type %in% c("nC", "nR")) %>%
+  mutate(target = paste("-", source, sep=""),
+         link_type = "neg")
+cause_negations = graph_structure %>% 
+  filter(link_type=="nC") %>%
+  mutate(source = paste("-", source, sep=""),
+         link_type = "pC")
+result_negations = graph_structure %>% 
+  filter(link_type=="nR") %>%
+  mutate(source = paste("-", source, sep=""),
+         link_type = "pR")
+graph_structure = graph_structure %>%
+  filter(!(link_type %in% c("nC", "nR"))) %>%
+  rbind(negations) %>% rbind(cause_negations) %>% rbind(result_negations)
+
+graph_structure = graph_structure %>% unique()
 
 edge_types = matrix(c(graph_structure$source, graph_structure$target), ncol=2) %>%
   t %>% c
@@ -64,7 +87,8 @@ link_color_map = c(
   pC = "blue",
   pR = "skyblue",
   nC = "red",
-  nR = "pink"
+  nR = "pink",
+  neg = "red"
 )
 
 link_colors = link_color_map[graph_structure$link_type]
@@ -73,11 +97,18 @@ abstract_graph = make_graph(edge_types, directed=F)
 
 node_types = names(V(abstract_graph))
 
-node_positions = data.frame(
-  variable = node_types,
-  r = c(3,1,1,5,5,0,2,0,0,0,2,4,6,6,6,4,6),
-  c = c(3,5,1,5,1,6,6,4,0,2,0,6,4,6,2,0,0)
+orig_node_types = c("D","pC","pR","nC","nR","pCpC","pCnC","pCnR","pRpR","pRnC","pRnR", "nCpC", "nCpR", "nCnC", "nRpC", "nRpR", "nRnR", "-D", "-pC", "-pR", "-nC", "-nR")
+orig_node_positions = data.frame(
+  variable = orig_node_types,
+  #     D     pC    pR    nC    nR    pCpC pCnC pCnR pRpR pRnC pRnR nCpC nCpR nCnC nRpC nRpR nRnR -D    -pC   -pR   -nC   -nR
+  r = c(2.75, 1.25, 1.25, 4.75, 4.75, 2,   0,   0,   2,   0,   0,   4,   6,   6,   6,   4,   6,   3.25, 0.75, 0.75, 5.25, 5.25),
+  c = c(3,    5,    1,    5,    1,    6,   6,   4,   0,   2,   0,   6,   4,   6,   2,   0,   0,   3,    5,    1,    5,    1)
 )
+node_positions = data.frame(
+    variable = node_types
+  ) %>%
+  mutate(r = sapply(char(variable), function(v) {return((orig_node_positions %>% filter(variable==v))$r[1])})) %>%
+  mutate(c = sapply(char(variable), function(v) {return((orig_node_positions %>% filter(variable==v))$c[1])}))
 
 abstract_layout = matrix(c(node_positions$r, node_positions$c), byrow=F, ncol=2)
 
@@ -85,7 +116,7 @@ plot(abstract_graph,
      vertex.size=1,
      vertex.label.cex=0.7,
      vertex.label.color="black",
-     vertex.label.dist=1.5,
+     vertex.label.dist=1,
      edge.color=link_colors,
      layout=abstract_layout)
 
@@ -98,58 +129,57 @@ plot(abstract_graph,
 # messy: 8, 12
 # worker_to_graph = 19
 
-for (worker_to_graph in unique(df$workerid)) {
-  w = df %>%
-    select(disease, completed, response, positive_response, variable, workerid) %>%
-    filter(workerid==worker_to_graph) %>%
-    filter(!is.na(response))
-  responses = w$positive_response
-  names(responses) = w$variable
-  
-  edges_df = graph_structure %>%
-    select(source, target, link_type) %>%
-    filter(target %in% w$variable & source %in% w$variable) %>%
-    mutate(source = responses[source],
-           target = responses[target])
-  edges = matrix(c(edges_df$source, edges_df$target), ncol=2) %>%
-    t %>% c
-  
-  link_colors = link_color_map[edges_df$link_type]
-  
-  g = make_graph(edges, directed=F)
-  
-  nodes = names(V(g))
-  
-  # get node locations
-  row_pos = node_positions$r
-  names(row_pos) = node_positions$variable
-  col_pos = node_positions$c
-  names(col_pos) = node_positions$variable
-  
-  nodes_df = w %>% group_by(positive_response) %>%
-    summarise(variable = variable[1])
-  first_vars = nodes_df$variable
-  names(first_vars) = nodes_df$positive_response
-  
-  positions = data.frame(
-    positive_response = nodes,
-    variable = first_vars[nodes],
-    stringsAsFactors = F) %>%
-    mutate(r = row_pos[char(variable)],
-           c = col_pos[char(variable)])
-  
-  g_layout = matrix(c(positions$r, positions$c), byrow=F, ncol=2)
-  
-  pdf(file=paste("graphs/s", worker_to_graph, ".pdf", sep=""))
-  plot(g,
-       vertex.size=1,
-       vertex.label.cex=0.35,
-       vertex.label.color="black",
-       vertex.label.dist=1.5,
-       edge.color=link_colors,
-       layout=g_layout)
-  dev.off()
-}
+worker_to_graph = 8
+w = df %>%
+  select(response, positive_response, variable, workerid) %>%
+  filter(workerid==worker_to_graph) %>%
+  filter(!is.na(response))
+responses = w$positive_response
+names(responses) = w$variable
+
+edges_df = graph_structure %>%
+  select(source, target, link_type) %>%
+  filter(target %in% w$variable & source %in% w$variable) %>%
+  mutate(source = responses[source],
+         target = responses[target])
+edges = matrix(c(edges_df$source, edges_df$target), ncol=2) %>%
+  t %>% c
+
+link_colors = link_color_map[edges_df$link_type]
+
+g = make_graph(edges, directed=F)
+
+nodes = names(V(g))
+
+# get node locations
+row_pos = node_positions$r
+names(row_pos) = node_positions$variable
+col_pos = node_positions$c
+names(col_pos) = node_positions$variable
+
+nodes_df = w %>% group_by(positive_response) %>%
+  summarise(variable = variable[1])
+first_vars = nodes_df$variable
+names(first_vars) = nodes_df$positive_response
+
+positions = data.frame(
+  positive_response = nodes,
+  variable = first_vars[nodes],
+  stringsAsFactors = F) %>%
+  mutate(r = row_pos[char(variable)],
+         c = col_pos[char(variable)])
+
+g_layout = matrix(c(positions$r, positions$c), byrow=F, ncol=2)
+
+# pdf(file=paste("graphs/s", worker_to_graph, ".pdf", sep=""))
+plot(g,
+     vertex.size=1,
+     vertex.label.cex=1,
+     vertex.label.color="black",
+     vertex.label.dist=1.5,
+     edge.color=link_colors,
+     layout=g_layout)
+# dev.off()
 ```
 
 
