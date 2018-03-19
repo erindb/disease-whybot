@@ -234,58 +234,54 @@ plot(g,
      )
 # dev.off()
 ```
-
 ```{r}
-# for each (call it "central") node,
-#   for each other (call it "peripheral") node,
-#     what pattern(s) connect(s) the two?
-#   do any peripheral nodes share patterns?
-#   if they do, adjust the count for that pair up
-# look at the counts: are node pairs with high counts similar?
 graph_similarity_counts = matrix(0, nrow=length(nodes), ncol=length(nodes), dimnames = list(nodes, nodes))
-for (central_node in nodes) {
-  signatures_for_nodes = list()
-  for (peripheral_node in nodes) {
-    # find path(s) between the two
-    paths = all_simple_paths(g, from=central_node, to=peripheral_node, mode="all")
-    # for each path, get the corresponding link pattern
-    path_signatures = c()
-    for (path in paths) {
-      nodes_visited = nodes[path]
-      previous_node = nodes_visited[[1]]
-      path_signature = ""
-      for (path_node in nodes_visited[2:length(nodes_visited)]) {
-        link_pattern = paste((edges_df %>% filter((source==previous_node & target==path_node) | (target==previous_node & source==path_node)))$link_type, collapse="+")
-        if (nchar(link_pattern) > 0) {
-          path_signature = paste(path_signature, link_pattern, sep=" ")
+
+# for each node,
+#   check the links going out to see if there are any duplicates.
+#     if so, follow them and increment the nodes that are matched that way
+
+explore_duplicates = function(reference_nodes, graph_df, ignore=c()) {
+  out = graph_df %>% filter(source %in% reference_nodes & !(target %in% ignore))
+  out_counts = table(out$link_type)
+  duplicate_links = names(out_counts)[which(out_counts>1)]
+  for (duplicate_link in duplicate_links) {
+    nodes_to_increment = (out %>% filter(link_type == duplicate_link))$target
+    for (n1 in nodes_to_increment) {
+      for (n2 in nodes_to_increment) {
+        if (n1!=n2) {
+          graph_similarity_counts[n1, n2] <<- graph_similarity_counts[n1, n2] + 1
         }
-        previous_node = path_node
-      }
-      if (nchar(path_signature) > 0) {
-        path_signatures = c(path_signatures, path_signature)
       }
     }
-    signatures_for_nodes[[peripheral_node]] = path_signatures
+    explore_duplicates(nodes_to_increment, graph_df, ignore=reference_nodes)
   }
-  # if any peripheral nodes have matching patterns off of the central node, increment their counts
-  for (node1 in names(signatures_for_nodes)) {
-    for (node2 in names(signatures_for_nodes)) {
-      if (node1!=node2 & length(intersect(signatures_for_nodes[[node1]], signatures_for_nodes[[node2]])) > 0) {
-        graph_similarity_counts[node1, node2] = graph_similarity_counts[node1, node2] + 1
+  
+  into = graph_df %>% filter(target %in% reference_nodes & !(source %in% ignore))
+  into_counts = table(into$link_type)
+  duplicate_links = names(into_counts)[which(into_counts>1)]
+  for (duplicate_link in duplicate_links) {
+    nodes_to_increment = (into %>% filter(link_type == duplicate_link))$source
+    for (n1 in nodes_to_increment) {
+      for (n2 in nodes_to_increment) {
+        if (n1!=n2) {
+          graph_similarity_counts[n1, n2] <<- graph_similarity_counts[n1, n2] + 1
+        }
       }
     }
+    explore_duplicates(nodes_to_increment, graph_df, ignore=reference_nodes)
   }
 }
 
-similarity_df = expand.grid(node1=nodes, node2=nodes) %>%
-  mutate(similarity = mapply(function(node1, node2) {
-    if (node1 != node2 & graph_similarity_counts[node1, node2] > 0) {
-      return(graph_similarity_counts[node1, node2])
-    } else {
-      return(0)
-    }
-  }, node1, node2))
-similarity_df %>% filter(similarity == max(similarity_df$similarity))
+for (node in nodes) {
+  explore_duplicates(c(node), edges_df)
+}
+
+mergeables = as.data.frame(graph_similarity_counts) %>%
+  mutate(n1 = row.names(.)) %>%
+  gather("n2", "similarity", num(row.names(.))) %>%
+  filter(similarity > 0)
+mergeables
 ```
 
 
@@ -330,12 +326,6 @@ all_edges_df = do.call(rbind, lapply(unique(df$workerid), function(worker_to_gra
   return(edges_df)
 })) %>%
   unique()
-```
-
-```{r}
-target_word = "smoke"
-sub_edges_df = all_edges_df %>%
-  filter(grepl(target_word, source) | grepl(target_word, target))
 ```
 
 
