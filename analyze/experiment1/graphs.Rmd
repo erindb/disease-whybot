@@ -229,6 +229,46 @@ plot(g,
 # look at the counts: are node pairs with high counts similar?
 ```
 
+```{r}
+graph_similarity_counts = matrix(0, nrow=length(nodes), ncol=length(nodes), dimnames = list(nodes, nodes))
+for (central_node in nodes) {
+  signatures_for_nodes = list()
+  for (peripheral_node in nodes) {
+    # find path(s) between the two
+    paths = all_simple_paths(g, from=central_node, to=peripheral_node, mode="all")
+    # for each path, get the corresponding link pattern
+    path_signatures = c()
+    for (path in paths) {
+      nodes_visited = nodes[path]
+      previous_node = nodes_visited[[1]]
+      path_signature = "path:"
+      for (path_node in nodes_visited[2:length(nodes_visited)]) {
+        link_pattern = paste((edges_df %>% filter((source==previous_node & target==path_node) | (target==previous_node & source==path_node)))$link_type, collapse="+")
+        path_signature = paste(path_signature, link_pattern)
+        previous_node = path_node
+      }
+      path_signatures = c(path_signatures, path_signature)
+    }
+    signatures_for_nodes[[peripheral_node]] = path_signatures
+  }
+  # if any peripheral nodes have matching patterns off of the central node, increment their counts
+  for (node1 in names(signatures_for_nodes)) {
+    for (node2 in names(signatures_for_nodes)) {
+      if (node1!=node2 & length(intersect(signatures_for_nodes[[node1]], signatures_for_nodes[[node2]])) > 0) {
+        graph_similarity_counts[node1, node2] = graph_similarity_counts[node1, node2] + 1
+      }
+    }
+  }
+}
+for (node1 in nodes) {
+  for (node2 in nodes) {
+    if (node1 != node2 & graph_similarity_counts[node1, node2] > 0) {
+      print(paste(node1, node2, graph_similarity_counts[node1, node2]))
+    }
+  }
+}
+```
+
 
 ```{r}
 
