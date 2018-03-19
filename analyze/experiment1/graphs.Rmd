@@ -67,7 +67,12 @@ graph_structure = full_graph_structure
 negations = graph_structure %>% 
   filter(link_type %in% c("nC", "nR")) %>%
   mutate(target = paste("-", source, sep=""),
-         link_type = "neg")
+         link_type = "neg") %>%
+  rbind(graph_structure %>% 
+  filter(link_type %in% c("nC", "nR")) %>%
+  mutate(target = source,
+         source = paste("-", source, sep=""),
+         link_type = "neg"))
 cause_negations = graph_structure %>% 
   filter(link_type=="nC") %>%
   mutate(source = paste("-", source, sep=""),
@@ -151,7 +156,12 @@ edges_df = full_graph_structure %>%
 negations = edges_df %>% 
   filter(link_type %in% c("nC", "nR")) %>%
   mutate(target = paste("NOT(", source, ")", sep=""),
-         link_type = "neg")
+         link_type = "neg") %>%
+  rbind(edges_df %>% 
+  filter(link_type %in% c("nC", "nR")) %>%
+  mutate(target = source,
+         source = paste("NOT(", source, ")", sep=""),
+         link_type = "neg"))
 cause_negations = edges_df %>% 
   filter(link_type=="nC") %>%
   mutate(source = paste("NOT(", source, ")", sep=""),
@@ -206,10 +216,17 @@ plot(g,
      vertex.label.color="black",
      vertex.label.dist=1.5,
      edge.color=link_colors,
-     layout=g_layout,
-     edge.arrow.size=0.25
+     # layout=g_layout,
+     edge.arrow.size=0.5
      )
 # dev.off()
+
+# for each (call it "central") node,
+#   for each other (call it "peripheral") node,
+#     what pattern(s) connect(s) the two?
+#   do any peripheral nodes share patterns?
+#   if they do, adjust the count for that pair up
+# look at the counts: are node pairs with high counts similar?
 ```
 
 
