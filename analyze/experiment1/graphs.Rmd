@@ -43,7 +43,7 @@ transforms = c("p", "n")
 frames = c("C", "R")
 n_link_types = length(transforms)*length(frames)
 
-graph_structure = data.frame(
+full_graph_structure = data.frame(
   transform1 = c(rep(rep(transforms, c(2,2)), 1),
                  rep(rep(transforms, c(8,8)), 1)),
   frame1 = c(rep(rep(frames, c(1,1)), 2),
@@ -61,6 +61,8 @@ graph_structure = data.frame(
          target = variable,
          link_type = ifelse(var2=="", var1, var2)) %>%
   select(source, target, link_type)
+
+graph_structure = full_graph_structure
 
 negations = graph_structure %>% 
   filter(link_type %in% c("nC", "nR")) %>%
@@ -93,7 +95,7 @@ link_color_map = c(
 
 link_colors = link_color_map[graph_structure$link_type]
 
-abstract_graph = make_graph(edge_types, directed=F)
+abstract_graph = make_graph(edge_types, directed=T)
 
 node_types = names(V(abstract_graph))
 
@@ -101,8 +103,8 @@ orig_node_types = c("D","pC","pR","nC","nR","pCpC","pCnC","pCnR","pRpR","pRnC","
 orig_node_positions = data.frame(
   variable = orig_node_types,
   #     D     pC    pR    nC    nR    pCpC pCnC pCnR pRpR pRnC pRnR nCpC nCpR nCnC nRpC nRpR nRnR -D    -pC   -pR   -nC   -nR
-  r = c(2.75, 1.25, 1.25, 4.75, 4.75, 2,   0,   0,   2,   0,   0,   4,   6,   6,   6,   4,   6,   3.25, 0.75, 0.75, 5.25, 5.25),
-  c = c(3,    5,    1,    5,    1,    6,   6,   4,   0,   2,   0,   6,   4,   6,   2,   0,   0,   3,    5,    1,    5,    1)
+  r = c(4,    2,    2,    7,    7,    3,   0,   0,   3,   0,   0,   6,   9,   9,   8,   6,   9,   5,    1,    1,    8,    8),
+  c = c(4,    7,    1,    8,    2,    8,   8,   5,   0,   3,   0,   9,   6,   9,   3,   1,   0,   5,    6,    2,    7,    1)
 )
 node_positions = data.frame(
     variable = node_types
@@ -118,7 +120,8 @@ plot(abstract_graph,
      vertex.label.color="black",
      vertex.label.dist=1,
      edge.color=link_colors,
-     layout=abstract_layout)
+     layout=abstract_layout,
+     edge.arrow.size=0.5)
 
 # layout_as_tree(abstract_graph)
 ```
@@ -137,17 +140,37 @@ w = df %>%
 responses = w$positive_response
 names(responses) = w$variable
 
-edges_df = graph_structure %>%
+edges_df = full_graph_structure %>%
   select(source, target, link_type) %>%
   filter(target %in% w$variable & source %in% w$variable) %>%
   mutate(source = responses[source],
-         target = responses[target])
+         target = responses[target]) %>%
+  unique()
+
+## make negations of D, pC, nC, nR, pR
+negations = edges_df %>% 
+  filter(link_type %in% c("nC", "nR")) %>%
+  mutate(target = paste("NOT(", source, ")", sep=""),
+         link_type = "neg")
+cause_negations = edges_df %>% 
+  filter(link_type=="nC") %>%
+  mutate(source = paste("NOT(", source, ")", sep=""),
+         link_type = "pC")
+result_negations = edges_df %>% 
+  filter(link_type=="nR") %>%
+  mutate(source = paste("NOT(", source, ")", sep=""),
+         link_type = "pR")
+edges_df = edges_df %>%
+  filter(!(link_type %in% c("nC", "nR"))) %>%
+  rbind(negations) %>% rbind(cause_negations) %>% rbind(result_negations) %>%
+  unique()
+
 edges = matrix(c(edges_df$source, edges_df$target), ncol=2) %>%
   t %>% c
 
 link_colors = link_color_map[edges_df$link_type]
 
-g = make_graph(edges, directed=F)
+g = make_graph(edges, directed=T)
 
 nodes = names(V(g))
 
@@ -157,7 +180,12 @@ names(row_pos) = node_positions$variable
 col_pos = node_positions$c
 names(col_pos) = node_positions$variable
 
-nodes_df = w %>% group_by(positive_response) %>%
+negations = w %>% filter(variable%in%c("nR", "nC", "D", "pR", "pC")) %>%
+  mutate(positive_response = paste("NOT(", positive_response, ")", sep=""),
+         variable = paste("-", variable, sep=""))
+nodes_df = w %>% 
+  rbind(negations) %>%
+  group_by(positive_response) %>%
   summarise(variable = variable[1])
 first_vars = nodes_df$variable
 names(first_vars) = nodes_df$positive_response
@@ -174,11 +202,13 @@ g_layout = matrix(c(positions$r, positions$c), byrow=F, ncol=2)
 # pdf(file=paste("graphs/s", worker_to_graph, ".pdf", sep=""))
 plot(g,
      vertex.size=1,
-     vertex.label.cex=1,
+     vertex.label.cex=0.5,
      vertex.label.color="black",
      vertex.label.dist=1.5,
      edge.color=link_colors,
-     layout=g_layout)
+     layout=g_layout,
+     edge.arrow.size=0.25
+     )
 # dev.off()
 ```
 
