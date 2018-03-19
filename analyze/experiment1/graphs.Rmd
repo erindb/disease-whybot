@@ -241,7 +241,12 @@ graph_similarity_counts = matrix(0, nrow=length(nodes), ncol=length(nodes), dimn
 #   check the links going out to see if there are any duplicates.
 #     if so, follow them and increment the nodes that are matched that way
 
+explored = c()
 explore_duplicates = function(reference_nodes, graph_df, ignore=c(), depth=0, max_depth=4) {
+  if (paste(reference_nodes, collapse = " ") %in% explored) {
+    pass = T
+  } else {
+    explored = c(explored, paste(reference_nodes, collapse = " "))
   out = graph_df %>% filter(source %in% reference_nodes & !(target %in% ignore))
   out_counts = table(out$link_type)
   duplicate_links = names(out_counts)[which(out_counts>1)]
@@ -275,6 +280,7 @@ explore_duplicates = function(reference_nodes, graph_df, ignore=c(), depth=0, ma
       explore_duplicates(nodes_to_increment, graph_df, ignore=reference_nodes, depth=depth+1, max_depth=max_depth)
     }
   }
+  }
 }
 
 for (node in nodes) {
@@ -290,7 +296,7 @@ mergeables
 
 
 ```{r}
-all_edges_df = do.call(rbind, lapply(unique(df$workerid), function(worker_to_graph) {
+all_edges_df_with_duplicates = do.call(rbind, lapply(unique(df$workerid), function(worker_to_graph) {
   w = df %>%
     select(response, positive_response, variable, workerid) %>%
     filter(workerid==worker_to_graph) %>%
@@ -302,8 +308,7 @@ all_edges_df = do.call(rbind, lapply(unique(df$workerid), function(worker_to_gra
     select(source, target, link_type) %>%
     filter(target %in% w$variable & source %in% w$variable) %>%
     mutate(source = responses[source],
-           target = responses[target]) %>%
-    unique()
+           target = responses[target])
   
   ## make negations of D, pC, nC, nR, pR
   negations = edges_df %>% 
@@ -325,11 +330,10 @@ all_edges_df = do.call(rbind, lapply(unique(df$workerid), function(worker_to_gra
            link_type = "pR")
   edges_df = edges_df %>%
     filter(!(link_type %in% c("nC", "nR"))) %>%
-    rbind(negations) %>% rbind(cause_negations) %>% rbind(result_negations) %>%
-    unique()
+    rbind(negations) %>% rbind(cause_negations) %>% rbind(result_negations)
   return(edges_df)
-})) %>%
-  unique()
+}))
+all_edges_df = all_edges_df_with_duplicates
 ```
 
 
@@ -383,27 +387,28 @@ plot(g,
 ```
 
 ```{r}
+explored = c()
 graph_similarity_counts = matrix(0, nrow=length(nodes), ncol=length(nodes), dimnames = list(nodes, nodes))
 
 for (node in nodes) {
   explore_duplicates(c(node), all_edges_df, max_depth = 1)
 }
-
-mergeables = as.data.frame(graph_similarity_counts) %>%
-  mutate(n1 = row.names(.)) %>%
-  gather("n2", "similarity", num(row.names(.))) %>%
-  filter(similarity > 0)
-mergeables
 ```
 
 ```{r}
-# mergeables %>%
-#   ggplot(., aes(x=n1, y=n2, fill=similarity)) +
+# max_rows = 10
+# # keep = rownames(graph_similarity_counts[1:max_rows, 1:max_rows])[rowSums(graph_similarity_counts[1:max_rows, 1:max_rows])>10]
+# keep = 1:max_rows
+# gs = graph_similarity_counts[keep,keep]
+# keep = rownames(gs)[rowSums(gs)>0]
+# gs = graph_similarity_counts[keep,keep]
+# mergeables = as.data.frame(gs) %>%
+#   mutate(n1 = row.names(.)) %>%
+#   gather("n2", "similarity", num(row.names(.)))
+# mergeables %>% ggplot(., aes(x=n1, y=n2, fill=similarity)) +
 #   geom_tile() +
-#   theme(axis.title.x=element_blank(),
-#         axis.text.x=element_blank(),
-#         axis.ticks.x=element_blank())
-mergeables %>% dist %>% hclust
+#   theme(axis.text.x=element_text(angle=90, hjust=1))#+
+#   # theme(axis.text.x = element_blank())
 ```
 
 
