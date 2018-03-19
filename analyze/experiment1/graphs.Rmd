@@ -241,7 +241,7 @@ graph_similarity_counts = matrix(0, nrow=length(nodes), ncol=length(nodes), dimn
 #   check the links going out to see if there are any duplicates.
 #     if so, follow them and increment the nodes that are matched that way
 
-explore_duplicates = function(reference_nodes, graph_df, ignore=c()) {
+explore_duplicates = function(reference_nodes, graph_df, ignore=c(), depth=0, max_depth=4) {
   out = graph_df %>% filter(source %in% reference_nodes & !(target %in% ignore))
   out_counts = table(out$link_type)
   duplicate_links = names(out_counts)[which(out_counts>1)]
@@ -254,7 +254,9 @@ explore_duplicates = function(reference_nodes, graph_df, ignore=c()) {
         }
       }
     }
-    explore_duplicates(nodes_to_increment, graph_df, ignore=reference_nodes)
+    if (depth<max_depth) {
+      explore_duplicates(nodes_to_increment, graph_df, ignore=reference_nodes, depth=depth+1, max_depth=max_depth)
+    }
   }
   
   into = graph_df %>% filter(target %in% reference_nodes & !(source %in% ignore))
@@ -269,7 +271,9 @@ explore_duplicates = function(reference_nodes, graph_df, ignore=c()) {
         }
       }
     }
-    explore_duplicates(nodes_to_increment, graph_df, ignore=reference_nodes)
+    if (depth<max_depth) {
+      explore_duplicates(nodes_to_increment, graph_df, ignore=reference_nodes, depth=depth+1, max_depth=max_depth)
+    }
   }
 }
 
@@ -330,10 +334,10 @@ all_edges_df = do.call(rbind, lapply(unique(df$workerid), function(worker_to_gra
 
 
 ```{r}
-edges = matrix(c(sub_edges_df$source, sub_edges_df$target), ncol=2) %>%
+edges = matrix(c(all_edges_df$source, all_edges_df$target), ncol=2) %>%
   t %>% c
 
-link_colors = link_color_map[sub_edges_df$link_type]
+link_colors = link_color_map[all_edges_df$link_type]
 
 g = make_graph(edges, directed=T)
 
@@ -378,6 +382,32 @@ plot(g,
 # dev.off()
 ```
 
+```{r}
+graph_similarity_counts = matrix(0, nrow=length(nodes), ncol=length(nodes), dimnames = list(nodes, nodes))
+
+for (node in nodes) {
+  explore_duplicates(c(node), all_edges_df, max_depth = 1)
+}
+
+mergeables = as.data.frame(graph_similarity_counts) %>%
+  mutate(n1 = row.names(.)) %>%
+  gather("n2", "similarity", num(row.names(.))) %>%
+  filter(similarity > 0)
+mergeables
+```
+
+```{r}
+# mergeables %>%
+#   ggplot(., aes(x=n1, y=n2, fill=similarity)) +
+#   geom_tile() +
+#   theme(axis.title.x=element_blank(),
+#         axis.text.x=element_blank(),
+#         axis.ticks.x=element_blank())
+mergeables %>% dist %>% hclust
+```
+
+
+
 
 ```{r}
 # for each (call it "central") node,
@@ -399,7 +429,7 @@ for (central_node in nodes) {
       previous_node = nodes_visited[[1]]
       path_signature = ""
       for (path_node in nodes_visited[2:length(nodes_visited)]) {
-        link_pattern = paste((sub_edges_df %>% filter((source==previous_node & target==path_node) | (target==previous_node & source==path_node)))$link_type, collapse="+")
+        link_pattern = paste((all_edges_df %>% filter((source==previous_node & target==path_node) | (target==previous_node & source==path_node)))$link_type, collapse="+")
         if (nchar(link_pattern) > 0) {
           path_signature = paste(path_signature, link_pattern, sep=" ")
         }
