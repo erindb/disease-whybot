@@ -301,6 +301,23 @@ dev.off()
 ```
 
 ```{r}
+diseases = df %>% group_by(workerid) %>% summarise(disease = disease[1])
+diseases = setNames(as.character(diseases$disease), char(diseases$workerid))
+workers = workers %>%
+  mutate(disease = diseases[char(workerid)])
+workers %>%
+  ggplot(., aes(x=number_of_unique_nodes)) +
+  geom_histogram() +
+  facet_wrap(~disease)
+workers %>%
+  group_by(disease) %>%
+  summarise(number_of_complete_graphs = sum(number_of_unique_nodes>=16)) %>%
+  ggplot(., aes(x=disease, y=number_of_complete_graphs)) +
+  geom_bar(stat="identity")
+```
+
+
+```{r}
 graph_similarity_counts = matrix(0, nrow=length(nodes), ncol=length(nodes), dimnames = list(nodes, nodes))
 
 # for each node,
