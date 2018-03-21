@@ -34,6 +34,16 @@ df$positive_response = gsub(
   "<span class='variable_word his'>\\{\\{\\}\\}</span>",
   "P's",
   df$positive_response)
+
+df$negated_response = gsub(
+  "<span class='variable_word (name|him|he)'>\\{\\{\\}\\}</span>",
+  "P",
+  df$negated_response)
+df$negated_response = gsub(
+  "<span class='variable_word his'>\\{\\{\\}\\}</span>",
+  "P's",
+  df$negated_response)
+df = df %>% mutate(negated_response = ifelse(variable=="D", paste("not", positive_response), negated_response))
 ```
 
 
@@ -122,8 +132,8 @@ orig_node_types = c("D","pC","pR","nC","nR","pCpC","pCnC","pCnR","pRpR","pRnC","
 orig_node_positions = data.frame(
   variable = orig_node_types,
   #     D     pC    pR    nC    nR    pCpC pCnC pCnR pRpR pRnC pRnR nCpC nCpR nCnC nRpC nRpR nRnR -D    -pC   -pR   -nC   -nR
-  r = c(4,    2,    2,    7,    7,    3,   0,   0,   3,   0,   0,   6,   9,   9,   8,   6,   9,   5,    1,    1,    8,    8),
-  c = c(4,    7,    1,    8,    2,    8,   8,   5,   0,   3,   0,   9,   6,   9,   3,   1,   0,   5,    6,    2,    7,    1)
+  r = c(4,    2,    2,    7,    7,    3,   -1,   0,   3,   0,   -1,   5,   9,   9,   8,   6,   10,   5,    1,    1,    8,    9),
+  c = c(4,    7,    1,    8,    2,    8,   9,   5,   0,   3,   -1,   10,   6,   9,   3,   1,   -1,   5,    6,    2,    7,    0)
 )
 node_positions = data.frame(
     variable = node_types
@@ -157,10 +167,15 @@ dev.off()
 # messy: 8, 12
 # worker_to_graph = 19
 
+# number of unique nodes per subject
+workers = data.frame(workerid = unique(df$workerid),
+                     number_of_unique_nodes = NA)
+
 for (worker_to_graph in unique(df$workerid)) {
 # worker_to_graph = 8
+  # print(worker_to_graph)
 w = df %>%
-  select(response, positive_response, variable, workerid) %>%
+  select(response, positive_response, negated_response, variable, workerid) %>%
   filter(workerid==worker_to_graph) %>%
   # hard code graph similarity merges
   # mutate(positive_response = ifelse(positive_response=="P has lung cancer", "Lung cancer", positive_response)) %>%
@@ -168,31 +183,38 @@ w = df %>%
   filter(!is.na(response))
 responses = w$positive_response
 names(responses) = w$variable
+negated_responses = w$negated_response
+names(negated_responses) = w$variable
 
 edges_df = full_graph_structure %>%
   select(source, target, link_type) %>%
+  mutate(source = char(source),
+         target = char(target),
+         link_type = char(link_type)) %>%
   filter(target %in% w$variable & source %in% w$variable) %>%
-  mutate(source = responses[source],
+  mutate(negated_source = negated_responses[source],
+         source = responses[source],
          target = responses[target]) %>%
+  mutate(negated_source = ifelse(is.na(negated_source), paste("NOT(", source, ")", sep=""), negated_source)) %>%
   unique()
 
 ## make negations of D, pC, nC, nR, pR
 negations = edges_df %>% 
   filter(link_type %in% c("nC", "nR")) %>%
-  mutate(target = paste("NOT(", source, ")", sep=""),
+  mutate(target = negated_source,
          link_type = "neg") %>%
   rbind(edges_df %>% 
   filter(link_type %in% c("nC", "nR")) %>%
   mutate(target = source,
-         source = paste("NOT(", source, ")", sep=""),
+         source = negated_source,
          link_type = "neg"))
 causes_of_negations = edges_df %>% 
   filter(link_type=="nC") %>%
-  mutate(source = paste("NOT(", source, ")", sep=""),
+  mutate(source = negated_source,
          link_type = "pC")
 results_of_negations = edges_df %>% 
   filter(link_type=="nR") %>%
-  mutate(source = paste("NOT(", source, ")", sep=""),
+  mutate(source = negated_source,
          link_type = "pR")
 edges_df = edges_df %>%
   filter(!(link_type %in% c("nC", "nR"))) %>%
@@ -215,6 +237,8 @@ edges_df = edges_df %>%
   #        target = ifelse(target=="NOT(P is ill)", "P is not ill", target)) %>%
   unique()
 
+workers$number_of_unique_nodes[which(workers$workerid==worker_to_graph)] = nrow(edges_df)
+
 edges = matrix(c(edges_df$source, edges_df$target), ncol=2) %>%
   t %>% c
 
@@ -231,13 +255,14 @@ col_pos = node_positions$c
 names(col_pos) = node_positions$variable
 
 negations = w %>% filter(variable%in%c("nR", "nC", "D", "pR", "pC")) %>%
-  mutate(positive_response = paste("NOT(", positive_response, ")", sep=""),
+  mutate(positive_response = negated_response,
+         #paste("NOT(", positive_response, ")", sep=""),
          variable = paste("-", variable, sep=""))
 nodes_df = w %>% 
   rbind(negations) %>%
   group_by(positive_response) %>%
   summarise(variable = variable[1])
-first_vars = nodes_df$variable
+first_vars = char(nodes_df$variable)
 names(first_vars) = nodes_df$positive_response
 
 positions = data.frame(
@@ -250,7 +275,7 @@ positions = data.frame(
 g_layout = matrix(c(positions$r, positions$c), byrow=F, ncol=2)
 
 # pdf(file=paste("graphs/s", worker_to_graph, ".pdf", sep=""))
-png(file=paste("graphs/s", worker_to_graph, ".png", sep=""), width=1800, height=1200)
+png(file=paste("graphs/s", worker_to_graph, ".png", sep=""), width=1500, height=1200)
 plot(g,
      vertex.size=0,
      vertex.label.cex=2,
