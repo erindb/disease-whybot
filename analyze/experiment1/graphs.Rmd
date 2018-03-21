@@ -168,6 +168,8 @@ dev.off()
 # messy: 8, 12
 # worker_to_graph = 19
 
+master_graph_df = NA
+
 # number of unique nodes per subject
 workers = data.frame(workerid = unique(df$workerid),
                      number_of_unique_nodes = NA)
@@ -238,6 +240,12 @@ edges_df = edges_df %>%
   #        target = ifelse(target=="NOT(P is ill)", "P is not ill", target)) %>%
   unique()
 
+if (worker_to_graph==0) {
+  master_graph_df = edges_df
+} else {
+  master_graph_df <<- master_graph_df %>% rbind(edges_df)
+}
+
 workers$number_of_unique_nodes[which(workers$workerid==worker_to_graph)] = nrow(edges_df)
 
 edges = matrix(c(edges_df$source, edges_df$target), ncol=2) %>%
@@ -300,6 +308,47 @@ plot(g,
 dev.off()
 }
 ```
+
+```{r}
+# master_graph_df = master_graph_df %>% filter(source=="P smoked" | target=="P smoked")
+master_edges = matrix(c(master_graph_df$source, master_graph_df$target), ncol=2) %>%
+  t %>% c
+link_colors = link_color_map[master_graph_df$link_type]
+g = make_graph(master_edges, directed=T)
+png(file="graphs/master.png", width=15000, height=12000)
+plot(g,
+     vertex.size=0,
+     vertex.label.cex=2,
+     vertex.label.color="black",
+     vertex.label.dist=0,
+     vertex.color="black",
+     edge.width=2,
+     edge.color=link_colors,
+     edge.arrow.size=1,
+     edge.arrow.width=1)
+dev.off()
+```
+
+```{r}
+smoking_graph_df = master_graph_df %>% filter(source=="P smoked" | target=="P smoked")
+smoking_edges = matrix(c(smoking_graph_df$source, smoking_graph_df$target), ncol=2) %>%
+  t %>% c
+link_colors = link_color_map[smoking_graph_df$link_type]
+g = make_graph(smoking_edges, directed=T)
+png(file="graphs/master.png", width=1500, height=1200)
+plot(g,
+     vertex.size=0,
+     vertex.label.cex=2,
+     vertex.label.color="black",
+     vertex.label.dist=0,
+     vertex.color="black",
+     edge.width=2,
+     edge.color=link_colors,
+     edge.arrow.size=1,
+     edge.arrow.width=1)
+dev.off()
+```
+
 
 ```{r}
 diseases = df %>% group_by(workerid) %>% summarise(disease = disease[1],
@@ -378,6 +427,21 @@ workers %>%
   xlab("")
 ggsave("enjoyment.png", width=12, height=8)
 ```
+
+```{r}
+graph_similarity_counts = matrix(0, nrow=length(nodes), ncol=length(nodes), dimnames = list(nodes, nodes))
+
+```
+
+
+
+
+
+
+
+
+
+
 
 
 ```{r}
