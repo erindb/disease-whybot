@@ -65,25 +65,32 @@ full_graph_structure = data.frame(
 graph_structure = full_graph_structure
 
 negations = graph_structure %>% 
+  # make negation links
   filter(link_type %in% c("nC", "nR")) %>%
   mutate(target = paste("-", source, sep=""),
          link_type = "neg") %>%
   rbind(graph_structure %>% 
-  filter(link_type %in% c("nC", "nR")) %>%
-  mutate(target = source,
-         source = paste("-", source, sep=""),
-         link_type = "neg"))
-cause_negations = graph_structure %>% 
+          filter(link_type %in% c("nC", "nR")) %>%
+          mutate(target = source,
+                 source = paste("-", source, sep=""),
+                 link_type = "neg"))
+
+# If link type is nC, that means that it caused something to not happen.
+# So it becomes a positive cause of the negation.
+causes_of_negations = graph_structure %>% 
   filter(link_type=="nC") %>%
   mutate(source = paste("-", source, sep=""),
          link_type = "pC")
-result_negations = graph_structure %>% 
+
+results_of_negations = graph_structure %>% 
   filter(link_type=="nR") %>%
   mutate(source = paste("-", source, sep=""),
          link_type = "pR")
+
 graph_structure = graph_structure %>%
   filter(!(link_type %in% c("nC", "nR"))) %>%
-  rbind(negations) %>% rbind(cause_negations) %>% rbind(result_negations) %>%
+  rbind(negations) %>% rbind(causes_of_negations) %>%
+  rbind(results_of_negations) %>%
   mutate(old_target = target,
          old_source = source,
          target = ifelse(link_type=="pC", old_source, target),
@@ -126,17 +133,20 @@ node_positions = data.frame(
 
 abstract_layout = matrix(c(node_positions$r, node_positions$c), byrow=F, ncol=2)
 
-# pdf(file="graphs/abstract_graph.pdf")
+png(file="graphs/abstract_graph.png", width = 1800, height=1200)
 plot(abstract_graph,
-     vertex.size=1,
+     vertex.size=0,
      vertex.label=NA,
      vertex.label.cex=0.7,
      vertex.label.color="black",
      vertex.label.dist=1,
+     vertex.color="black",
+    edge.width=10,
      edge.color=link_colors,
      layout=abstract_layout,
-     edge.arrow.size=0.5)
-# dev.off()
+     edge.arrow.size=3,
+    edge.arrow.width=2)
+dev.off()
 
 # layout_as_tree(abstract_graph)
 ```
@@ -147,7 +157,8 @@ plot(abstract_graph,
 # messy: 8, 12
 # worker_to_graph = 19
 
-worker_to_graph = 8
+for (worker_to_graph in unique(df$workerid)) {
+# worker_to_graph = 8
 w = df %>%
   select(response, positive_response, variable, workerid) %>%
   filter(workerid==worker_to_graph) %>%
@@ -175,18 +186,24 @@ negations = edges_df %>%
   mutate(target = source,
          source = paste("NOT(", source, ")", sep=""),
          link_type = "neg"))
-cause_negations = edges_df %>% 
+causes_of_negations = edges_df %>% 
   filter(link_type=="nC") %>%
   mutate(source = paste("NOT(", source, ")", sep=""),
          link_type = "pC")
-result_negations = edges_df %>% 
+results_of_negations = edges_df %>% 
   filter(link_type=="nR") %>%
   mutate(source = paste("NOT(", source, ")", sep=""),
          link_type = "pR")
 edges_df = edges_df %>%
   filter(!(link_type %in% c("nC", "nR"))) %>%
-  rbind(negations) %>% rbind(cause_negations) %>% rbind(result_negations) %>%
-  unique()
+  rbind(negations) %>% rbind(causes_of_negations) %>% rbind(results_of_negations) %>%
+  unique() %>%
+  mutate(old_target = target,
+         old_source = source,
+         target = ifelse(link_type=="pC", old_source, target),
+         source = ifelse(link_type=="pC", old_target, source),
+         link_type = ifelse(link_type=="pC", "pR", link_type)) %>%
+  select(-old_target, -old_source)
 
 edges_df = edges_df %>%
   # hard code graph similarity merges
@@ -233,17 +250,31 @@ positions = data.frame(
 g_layout = matrix(c(positions$r, positions$c), byrow=F, ncol=2)
 
 # pdf(file=paste("graphs/s", worker_to_graph, ".pdf", sep=""))
+png(file=paste("graphs/s", worker_to_graph, ".png", sep=""), width=1800, height=1200)
 plot(g,
-     vertex.size=1,
-     vertex.label.cex=0.5,
+     vertex.size=0,
+     vertex.label.cex=2,
      vertex.label.color="black",
-     vertex.label.dist=1.5,
+     vertex.label.dist=0,
+     vertex.color="black",
+     edge.width=2,
      edge.color=link_colors,
-     # layout=g_layout,
-     edge.arrow.size=0.5
-     )
-# dev.off()
+     layout=g_layout,
+     edge.arrow.size=1,
+     edge.arrow.width=1)
+# plot(g,
+#      vertex.size=1,
+#      vertex.label.cex=0.5,
+#      vertex.label.color="black",
+#      vertex.label.dist=1.5,
+#      edge.color=link_colors,
+#      layout=g_layout,
+#      edge.arrow.size=0.5
+#      )
+dev.off()
+}
 ```
+
 ```{r}
 graph_similarity_counts = matrix(0, nrow=length(nodes), ncol=length(nodes), dimnames = list(nodes, nodes))
 
