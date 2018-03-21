@@ -309,6 +309,118 @@ dev.off()
 }
 ```
 
+
+
+```{r}
+master_edges = matrix(c(master_graph_df$source,
+                        master_graph_df$target), ncol=2) %>%
+  t %>% c
+g = make_graph(master_edges, directed=T)
+E(g)$label = master_graph_df$link_type
+```
+
+
+```{r}
+nodes = sort(names(V(g)))
+adj_neg = make_graph(E(g)[E(g)$label=="neg"]) %>%
+  as_adjacency_matrix(., type = c("both"), edges = FALSE, names = TRUE, sparse = igraph_opt("sparsematrices"))
+adj_res = make_graph(E(g)[E(g)$label=="pR"]) %>%
+  as_adjacency_matrix(., type = c("both"), edges = FALSE, names = TRUE, sparse = igraph_opt("sparsematrices"))
+
+# m = sapply(nodes, function(n1) {
+#   return(sapply(nodes, function(n2) {
+#     if (n1 <= n2) {
+#       in1 = neighbors(g, n1, mode = c("in"))
+#       in2 = neighbors(g, n2, mode = c("in"))
+#       incount = length(intersect(in1, in2))
+#       out1 = neighbors(g, n1, mode = c("out"))
+#       out2 = neighbors(g, n2, mode = c("out"))
+#       outcount = length(intersect(out1, out2))
+#     }
+#   }))
+# })
+```
+
+```{r}
+a = c(1,0,0,0)
+b = c(0,1,0,0)
+c = c(0,0,1,0)
+d = c(0,0,0,1)
+neg_m = matrix(c(1,0,0,0,
+                 0,0,0,0,
+                 0,0,0,0,
+                 0,0,0,1), nrow=4)
+res_m = matrix(c(0,0,0,0,
+                 1,0,0,1,
+                 1,0,0,1,
+                 0,1,0,0), nrow=4)
+cause_m = matrix(c(0,1,1,0,
+                   0,0,0,1,
+                   0,0,0,0,
+                   0,1,1,0), nrow=4)
+
+# neg_m %*% b # where b can get to in one move via "neg"
+# neg_m %*% c # where c can get to in one move via "neg"
+# t(neg_m %*% b) %*% (neg_m %*% c) # how many one-neg-step negations they share
+neg_overlap = t(neg_m %*% diag(4)) %*% (neg_m %*% diag(4))
+
+# res_m %*% b # where b can get to in one move via "res"
+# res_m %*% c # where c can get to in one move via "res"
+# t(res_m %*% b) %*% (res_m %*% c) # how many one-step results they share
+res_overlap = t(res_m %*% diag(4)) %*% (res_m %*% diag(4))
+
+# cause_m %*% b # where b can get to in one move via "res"
+# cause_m %*% c # where c can get to in one move via "res"
+# t(cause_m %*% b) %*% (cause_m %*% c) # how many one-step causes they share
+cause_overlap = t(cause_m %*% diag(4)) %*% (cause_m %*% diag(4))
+
+overlap_m = cause_overlap + res_overlap + neg_overlap
+
+similarity_m = overlap_m
+diag(similarity_m) = max(similarity_m)
+similarity_m / max(similarity_m)
+
+single_step = overlap_m > 0
+single_step %*% single_step
+```
+
+
+
+
+
+```{r}
+neighbors_only_similarity = similarity(
+  g,
+  loops=F,
+  mode = "all", # mode = c("all", "out", "in", "total"),
+  method = "jaccard" # loops = FALSE, method = c("jaccard", "dice", "invlogweighted")
+)
+# max(neighbors_only_similarity)
+# mean(neighbors_only_similarity)
+find_most_similar = function(i) {
+print(names(V(g))[i])
+print(names(V(g))[which(neighbors_only_similarity[i,]==max(neighbors_only_similarity[i,][neighbors_only_similarity[i,]!=1]))])
+}
+for (i in 1:10) {
+  find_most_similar(i)
+}
+
+png(file=paste("graphs/directed_master.png", sep=""), width=1500, height=1200)
+plot(g,
+     vertex.size=0,
+     vertex.label=NA,
+     vertex.label.cex=0.5,
+     vertex.label.color="black",
+     vertex.label.dist=0,
+     vertex.color="black",
+     edge.width=2,
+     edge.arrow.size=0.01,
+     edge.arrow.width=0.01)
+dev.off()
+```
+
+
+
 ```{r}
 # master_graph_df = master_graph_df %>% filter(source=="P smoked" | target=="P smoked")
 master_edges = matrix(c(master_graph_df$source, master_graph_df$target), ncol=2) %>%
@@ -328,6 +440,11 @@ plot(g,
      edge.arrow.width=1)
 dev.off()
 ```
+
+```{r}
+similarity(g)
+```
+
 
 ```{r}
 smoking_graph_df = master_graph_df %>% filter(source=="P smoked" | target=="P smoked")
