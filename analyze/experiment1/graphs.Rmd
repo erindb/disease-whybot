@@ -18,6 +18,7 @@ library(igraph)
 library(ggthemes)
 char = as.character
 num = function(x) {return(as.numeric(as.character(x)))}
+library('Matrix')
 ```
 
 ```{r}
@@ -319,26 +320,140 @@ g = make_graph(master_edges, directed=T)
 E(g)$label = master_graph_df$link_type
 ```
 
+```{r}
+# sim_method = "jaccard"
+# sim_method = "dice"
+sim_method = "invlogweighted"
+neg = subgraph.edges(graph=g, eids=which(E(g)$label=="neg"), delete.vertices = F)
+res = subgraph.edges(graph=g, eids=which(E(g)$label=="pR"), delete.vertices = F)
+sim = similarity(neg, method=sim_method)/30 + similarity(res, method=sim_method)
+
+x = degree(g)
+rescaling = (matrix(rep(x, length(x)) + rep(x, rep(length(x), length(x))), ncol=length(x)))
+sim = sim/(rescaling)
+
+diag(sim) = 0
+cutoff = quantile(sim, .9995)
+fewer_sentences = c()
+synsets = c()
+# for (i in 1:nrow(sim)) {
+for (i in 1:100) {
+  mini_cutoff = quantile(sim[i,], 0.999)
+  close_nodes = (names(V(g))[which(sim[i,] > max(cutoff, mini_cutoff))])#[order(sim[i,][which(sim[i,] > max(cutoff, mini_cutoff))])]
+  if (length(close_nodes) > 0) {
+    close_nodes = c(names(V(g))[i], close_nodes)
+    fewer_sentences = c(fewer_sentences, close_nodes)
+    close_nodes = sort(close_nodes)
+    synsets = c(synsets, paste(close_nodes, collapse=", "))
+  }
+}
+synsets = synsets %>% unique
+write.csv(synsets, file = "similar.txt", row.names=F)
+synsets
+fewer_sentences = unique(fewer_sentences)
+# max(similarity(neg, method=sim_method)/20)
+# max(similarity(res, method=sim_method))
+# max(similarity(cause, method=sim_method))
+# mean(similarity(cause, method=sim_method)==t(similarity(res, method=sim_method)))
+```
+
+```{r}
+m = matrix(0, nrow=length(fewer_sentences), ncol=length(fewer_sentences), dimnames = list(fewer_sentences, fewer_sentences))
+for (s1 in char(fewer_sentences)) {
+  for (s2 in char(fewer_sentences)) {
+    m[s1,s2] = sim[which(names(V(g))==s1), which(names(V(g))==s2)]
+  }
+}
+# for (i in 1:100) {
+#   mini_cutoff = quantile(sim[i,], 0.999)
+#   close_nodes = (names(V(g))[which(sim[i,] > max(cutoff, mini_cutoff))])#[order(sim[i,][which(sim[i,] > max(cutoff, mini_cutoff))])]
+#   if (length(close_nodes) > 0) {
+#     close_nodes = c(names(V(g))[i], close_nodes)
+#     close_nodes = sort(close_nodes)
+#     synsets = c(synsets, paste(close_nodes, collapse=", "))
+#   }
+# }
+heatmap(m)
+```
+
+
+```{r}
+
+# find_most_similar = function(i) {
+#   cutoff = quantile(sim[i,], .995)
+#   if (cutoff > 0) {
+#     set_of_close_phrases = names(V(g))[which(sim[i,] > cutoff)]
+#     print(paste(set_of_close_phrases, collapse = " ~ "))
+#   }
+#   # # set_of_close_phrases = names(V(g))[which(sim[i,]>=max(sim[i,][sim[i,]!=3]))]
+#   # set_of_close_phrases = names(V(g))[which(sim[i,]>=0.3)]
+#   # similarity_score = round(max(sim[i,][sim[i,]!=1]), 4)
+#   # # if (similarity_score >= 0.015 & similarity_score < 0.02) {
+#   # # print(paste(paste(set_of_close_phrases, collapse = " ~ "), similarity_score, sep=" ~ "))
+#   # print(paste(set_of_close_phrases, collapse = " ~ "))
+#   # # }
+# }
+# find_most_similar(which(names(V(g))=="Lung cancer"))
+# find_most_similar(which(names(V(g))=="P smokes"))
+# find_most_similar(which(names(V(g))=="P is sick"))
+# find_most_similar(which(names(V(g))=="P has an illness"))
+# find_most_similar(which(names(V(g))=="P eats unhealthy foods"))
+# find_most_similar(which(names(V(g))=="Causing lung cancer"))
+# find_most_similar(which(names(V(g))=="P's genes do not contain that same marker"))
+# find_most_similar(which(names(V(g))=="P started hanging around with the wrong crowd"))
+# find_most_similar(which(names(V(g))=="P enjoys P's life"))
+# names(V(g))
+# for (i in 1:length(names(V(g)))) {
+# for (i in 1:10) {
+#   find_most_similar(i)
+# }
+```
+
+
 
 ```{r}
 nodes = sort(names(V(g)))
-adj_neg = make_graph(E(g)[E(g)$label=="neg"]) %>%
-  as_adjacency_matrix(., type = c("both"), edges = FALSE, names = TRUE, sparse = igraph_opt("sparsematrices"))
-adj_res = make_graph(E(g)[E(g)$label=="pR"]) %>%
-  as_adjacency_matrix(., type = c("both"), edges = FALSE, names = TRUE, sparse = igraph_opt("sparsematrices"))
+adj_neg = subgraph.edges(graph=g, eids=which(E(g)$label=="neg"), delete.vertices = F) %>%
+  as_adjacency_matrix(., edges = FALSE, names = TRUE, sparse = T)
+adj_res = subgraph.edges(graph=g, eids=which(E(g)$label=="pR"), delete.vertices = F) %>%
+  as_adjacency_matrix(., edges = FALSE, names = TRUE, sparse = T) %>%
+  as.matrix()
+adj_cause = t(adj_res)
+n = length(nodes)
 
-# m = sapply(nodes, function(n1) {
-#   return(sapply(nodes, function(n2) {
-#     if (n1 <= n2) {
-#       in1 = neighbors(g, n1, mode = c("in"))
-#       in2 = neighbors(g, n2, mode = c("in"))
-#       incount = length(intersect(in1, in2))
-#       out1 = neighbors(g, n1, mode = c("out"))
-#       out2 = neighbors(g, n2, mode = c("out"))
-#       outcount = length(intersect(out1, out2))
-#     }
-#   }))
-# })
+neg_overlap = t(adj_neg %*% diag(nrow(adj_neg))) %*% (adj_neg %*% diag(nrow(adj_neg)))
+cause_overlap = t(adj_cause %*% diag(nrow(adj_cause))) %*% (adj_cause %*% diag(nrow(adj_cause)))
+res_overlap = t(adj_res %*% diag(nrow(adj_res))) %*% (adj_res %*% diag(nrow(adj_res)))
+overlap_m = cause_overlap + res_overlap + neg_overlap
+```
+
+
+```{r}
+similarity_m = overlap_m
+dimnames(similarity_m) = list(nodes, nodes)
+single_step = overlap_m > 0
+
+# divide by sum of degrees
+x = degree(g)
+similarity_m = similarity_m / (matrix(rep(x, length(x)) + rep(x, rep(length(x), length(x))), ncol=length(x)))
+
+diag(similarity_m) = max(similarity_m)
+# similarity_m / max(similarity_m)
+similarity_m = similarity_m / max(similarity_m)
+distance_m = 1 - similarity_m
+# single_step = overlap_m > 0
+# single_step %*% single_step
+find_most_similar = function(i) {
+  set_of_close_phrases = names(V(g))[which(similarity_m[i,]>=max(similarity_m[i,][similarity_m[i,]!=1]))]
+  similarity_score = round(max(similarity_m[i,][similarity_m[i,]!=1]), 4)
+  # if (similarity_score >= 0.015 & similarity_score < 0.02) {
+    print(paste(paste(set_of_close_phrases, collapse = " ~ "), similarity_score, sep=" ~ "))
+  # }
+}
+for (i in 1:10) {
+# for (i in 1:length(nodes)) {
+  find_most_similar(i)
+}
 ```
 
 ```{r}
@@ -346,42 +461,48 @@ a = c(1,0,0,0)
 b = c(0,1,0,0)
 c = c(0,0,1,0)
 d = c(0,0,0,1)
-neg_m = matrix(c(1,0,0,0,
-                 0,0,0,0,
-                 0,0,0,0,
-                 0,0,0,1), nrow=4)
-res_m = matrix(c(0,0,0,0,
-                 1,0,0,1,
-                 1,0,0,1,
-                 0,1,0,0), nrow=4)
-cause_m = matrix(c(0,1,1,0,
-                   0,0,0,1,
-                   0,0,0,0,
-                   0,1,1,0), nrow=4)
+neg_m = matrix(c(0,0,0,0,1,
+                 0,0,0,0,0,
+                 0,0,0,0,1,
+                 1,0,1,0,0,
+                 0,0,0,0,0), nrow=5)
+res_m =matrix(c(0,1,0,0,0,
+                0,0,0,0,0,
+                0,1,0,0,1,
+                0,1,0,0,1,
+                0,0,0,0,0), nrow=5)
+cause_m = t(res_m)
 
 # neg_m %*% b # where b can get to in one move via "neg"
 # neg_m %*% c # where c can get to in one move via "neg"
 # t(neg_m %*% b) %*% (neg_m %*% c) # how many one-neg-step negations they share
-neg_overlap = t(neg_m %*% diag(4)) %*% (neg_m %*% diag(4))
+neg = t(neg_m %*% diag(5)) %*% (neg_m %*% diag(5))
 
 # res_m %*% b # where b can get to in one move via "res"
 # res_m %*% c # where c can get to in one move via "res"
 # t(res_m %*% b) %*% (res_m %*% c) # how many one-step results they share
-res_overlap = t(res_m %*% diag(4)) %*% (res_m %*% diag(4))
+res = t(res_m %*% diag(5)) %*% (res_m %*% diag(5))
 
 # cause_m %*% b # where b can get to in one move via "res"
 # cause_m %*% c # where c can get to in one move via "res"
 # t(cause_m %*% b) %*% (cause_m %*% c) # how many one-step causes they share
-cause_overlap = t(cause_m %*% diag(4)) %*% (cause_m %*% diag(4))
+cause = t(cause_m %*% diag(5)) %*% (cause_m %*% diag(5))
 
-overlap_m = cause_overlap + res_overlap + neg_overlap
+overlap = cause + res + neg
 
-similarity_m = overlap_m
+similarity_m = overlap
 diag(similarity_m) = max(similarity_m)
 similarity_m / max(similarity_m)
 
-single_step = overlap_m > 0
-single_step %*% single_step
+single_step = overlap > 0
+(single_step %*% single_step)/3
+
+x = c(2,3,3,4,2)
+m = (overlap %*% overlap %*% overlap %*% overlap %*% overlap %*% overlap) / (matrix(rep(x, length(x)) + rep(x, rep(length(x), length(x))), ncol=length(x)))
+diag(m) = 0
+round(m / max(m),2)
+
+((single_step %*% single_step %*% single_step %*% single_step %*% single_step) > 0) +0
 ```
 
 
