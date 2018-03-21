@@ -55,7 +55,24 @@ graph_structure = data.frame(
          variable = paste(var1, var2, sep="")) %>%
   mutate(source = ifelse(var2=="", "D", var1),
          target = variable,
-         link_type = ifelse(var2=="", var1, var2))
+         link_type = ifelse(var2=="", var1, var2)) %>%
+  select(source, target, link_type)
+
+negations = graph_structure %>%
+  filter(link_type%in%c("nC", "nR")) %>%
+  mutate(target = paste("-", source, sep="")) %>%
+  mutate(link_type = "neg")
+cause_negations = graph_structure %>%
+  filter(link_type=="nC") %>%
+  mutate(source = paste("-", source, sep="")) %>%
+  mutate(link_type = "pC")
+result_negations = graph_structure %>%
+  filter(link_type=="nR") %>%
+  mutate(source = paste("-", source, sep="")) %>%
+  mutate(link_type = "pR")
+graph_structure = graph_structure %>% filter(!(link_type %in% c("nC", "nR"))) %>%
+  rbind(negations) %>% rbind(cause_negations) %>% rbind(result_negations)
+graph_structure = unique(graph_structure)
 
 edge_types = matrix(c(graph_structure$source, graph_structure$target), ncol=2) %>%
   t %>% c
@@ -74,11 +91,16 @@ abstract_graph = make_graph(edge_types, directed=F)
 
 node_types = names(V(abstract_graph))
 
-node_positions = data.frame(
-  variable = node_types,
+orig_node_types = c("D", "pC", "pR", "nC", "nR", "pCpC", "pCnC", "pCnR", "pRpR", "pRnC", "pRnR", "nCpC", "nCpR", "nCnC", "nRpC", "nRpR", "nRnR")
+orig_node_positions = data.frame(
+  variable = orig_node_types,
   r = c(3,1,1,5,5,0,2,0,0,0,2,4,6,6,6,4,6),
   c = c(3,5,1,5,1,6,6,4,0,2,0,6,4,6,2,0,0)
 )
+new_node_positions = data.frame(variable = node_types) %>%
+  mutate(r = sapply(char(variable), function(v) {
+    return((orig_node_positions %>% filter(variable==v))$r[1])
+  }))
 
 abstract_layout = matrix(c(node_positions$r, node_positions$c), byrow=F, ncol=2)
 
