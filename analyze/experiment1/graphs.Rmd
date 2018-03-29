@@ -1,0 +1,621 @@
+---
+title: "whybot graphs"
+author: "erin"
+output: html_document
+---
+
+```{r global_options, include=FALSE}
+rm(list=ls())
+knitr::opts_chunk$set(echo=F, warning=F, cache=F, message=F,
+                      sanitiz=T, fig.width = 5, fig.height = 3)
+```
+
+```{r load_settings}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(igraph)
+library(ggthemes)
+char = as.character
+num = function(x) {return(as.numeric(as.character(x)))}
+```
+
+```{r}
+df = read.csv("../../data/experiment1/all_data.csv") %>%
+  mutate(response = char(response)) %>%
+  filter(!(workerid %in% c(3,4,5,6)))
+```
+
+```{r}
+df$positive_response = gsub(
+  "<span class='variable_word (name|him|he)'>\\{\\{\\}\\}</span>",
+  "P",
+  df$positive_response)
+df$positive_response = gsub(
+  "<span class='variable_word his'>\\{\\{\\}\\}</span>",
+  "P's",
+  df$positive_response)
+
+df$negated_response = gsub(
+  "<span class='variable_word (name|him|he)'>\\{\\{\\}\\}</span>",
+  "P",
+  df$negated_response)
+df$negated_response = gsub(
+  "<span class='variable_word his'>\\{\\{\\}\\}</span>",
+  "P's",
+  df$negated_response)
+df = df %>% mutate(negated_response = ifelse(variable=="D", paste("not", positive_response), negated_response))
+```
+
+
+```{r}
+# nodes = w0$response
+transforms = c("p", "n")
+frames = c("C", "R")
+n_link_types = length(transforms)*length(frames)
+
+full_graph_structure = data.frame(
+  transform1 = c(rep(rep(transforms, c(2,2)), 1),
+                 rep(rep(transforms, c(8,8)), 1)),
+  frame1 = c(rep(rep(frames, c(1,1)), 2),
+             rep(rep(frames, c(4,4)), 2)),
+  transform2 = c(rep("", n_link_types),
+                 rep(rep(transforms, c(2,2)), 4)),
+  frame2 = c(rep("", n_link_types),
+             rep(rep(frames, c(1,1)), 8)),
+  stringsAsFactors=F) %>%
+  filter(frame1==frame2 | transform1!=transform2) %>%
+  mutate(var1 = paste(transform1, frame1, sep=""),
+         var2 = paste(transform2, frame2, sep=""),
+         variable = paste(var1, var2, sep="")) %>%
+  mutate(source = ifelse(var2=="", "D", var1),
+         target = variable,
+         link_type = ifelse(var2=="", var1, var2)) %>%
+  select(source, target, link_type)
+
+graph_structure = full_graph_structure
+
+negations = graph_structure %>% 
+  # make negation links
+  filter(link_type %in% c("nC", "nR")) %>%
+  mutate(target = paste("-", source, sep=""),
+         link_type = "neg") %>%
+  rbind(graph_structure %>% 
+          filter(link_type %in% c("nC", "nR")) %>%
+          mutate(target = source,
+                 source = paste("-", source, sep=""),
+                 link_type = "neg"))
+
+# If link type is nC, that means that it caused something to not happen.
+# So it becomes a positive cause of the negation.
+causes_of_negations = graph_structure %>% 
+  filter(link_type=="nC") %>%
+  mutate(source = paste("-", source, sep=""),
+         link_type = "pC")
+
+results_of_negations = graph_structure %>% 
+  filter(link_type=="nR") %>%
+  mutate(source = paste("-", source, sep=""),
+         link_type = "pR")
+
+graph_structure = graph_structure %>%
+  filter(!(link_type %in% c("nC", "nR"))) %>%
+  rbind(negations) %>% rbind(causes_of_negations) %>%
+  rbind(results_of_negations) %>%
+  mutate(old_target = target,
+         old_source = source,
+         target = ifelse(link_type=="pC", old_source, target),
+         source = ifelse(link_type=="pC", old_target, source),
+         link_type = ifelse(link_type=="pC", "pR", link_type)) %>%
+  select(-old_target, -old_source)
+
+graph_structure = graph_structure %>% unique()
+
+edge_types = matrix(c(graph_structure$source, graph_structure$target), ncol=2) %>%
+  t %>% c
+
+link_color_map = c(
+  pC = "blue",
+  # pR = "skyblue",
+  pR = "black",
+  nC = "red",
+  nR = "pink",
+  neg = "red"
+)
+
+link_colors = link_color_map[graph_structure$link_type]
+
+abstract_graph = make_graph(edge_types, directed=T)
+
+node_types = names(V(abstract_graph))
+
+orig_node_types = c("D","pC","pR","nC","nR","pCpC","pCnC","pCnR","pRpR","pRnC","pRnR", "nCpC", "nCpR", "nCnC", "nRpC", "nRpR", "nRnR", "-D", "-pC", "-pR", "-nC", "-nR")
+orig_node_positions = data.frame(
+  variable = orig_node_types,
+  #     D     pC    pR    nC    nR    pCpC pCnC pCnR pRpR pRnC pRnR nCpC nCpR nCnC nRpC nRpR nRnR -D    -pC   -pR   -nC   -nR
+  r = c(4,    2,    2,    7,    7,    3,   -1,   0,   3,   0,   -1,   5,   9,   9,   8,   6,   10,   5,    1,    1,    8,    9),
+  c = c(4,    7,    1,    8,    2,    8,   9,   5,   0,   3,   -1,   10,   6,   9,   3,   1,   -1,   5,    6,    2,    7,    0)
+)
+node_positions = data.frame(
+    variable = node_types
+  ) %>%
+  mutate(r = sapply(char(variable), function(v) {return((orig_node_positions %>% filter(variable==v))$r[1])})) %>%
+  mutate(c = sapply(char(variable), function(v) {return((orig_node_positions %>% filter(variable==v))$c[1])}))
+
+abstract_layout = matrix(c(node_positions$r, node_positions$c), byrow=F, ncol=2)
+
+png(file="graphs/abstract_graph.png", width = 1800, height=1200)
+plot(abstract_graph,
+     vertex.size=0,
+     vertex.label=NA,
+     vertex.label.cex=0.7,
+     vertex.label.color="black",
+     vertex.label.dist=1,
+     vertex.color="black",
+    edge.width=10,
+     edge.color=link_colors,
+     layout=abstract_layout,
+     edge.arrow.size=3,
+    edge.arrow.width=2)
+dev.off()
+
+# layout_as_tree(abstract_graph)
+```
+
+```{r}
+# great examples: 10, 11, 17, 18, 19
+# tautological: 7
+# messy: 8, 12
+# worker_to_graph = 19
+
+# number of unique nodes per subject
+workers = data.frame(workerid = unique(df$workerid),
+                     number_of_unique_nodes = NA)
+
+for (worker_to_graph in unique(df$workerid)) {
+# worker_to_graph = 8
+  # print(worker_to_graph)
+w = df %>%
+  select(response, positive_response, negated_response, variable, workerid) %>%
+  filter(workerid==worker_to_graph) %>%
+  # hard code graph similarity merges
+  # mutate(positive_response = ifelse(positive_response=="P has lung cancer", "Lung cancer", positive_response)) %>%
+  # mutate(positive_response = ifelse(positive_response=="P does not have lung cancer", "P doesn't have lung cancer", positive_response)) %>%
+  filter(!is.na(response))
+responses = w$positive_response
+names(responses) = w$variable
+negated_responses = w$negated_response
+names(negated_responses) = w$variable
+
+edges_df = full_graph_structure %>%
+  select(source, target, link_type) %>%
+  mutate(source = char(source),
+         target = char(target),
+         link_type = char(link_type)) %>%
+  filter(target %in% w$variable & source %in% w$variable) %>%
+  mutate(negated_source = negated_responses[source],
+         source = responses[source],
+         target = responses[target]) %>%
+  mutate(negated_source = ifelse(is.na(negated_source), paste("NOT(", source, ")", sep=""), negated_source)) %>%
+  unique()
+
+## make negations of D, pC, nC, nR, pR
+negations = edges_df %>% 
+  filter(link_type %in% c("nC", "nR")) %>%
+  mutate(target = negated_source,
+         link_type = "neg") %>%
+  rbind(edges_df %>% 
+  filter(link_type %in% c("nC", "nR")) %>%
+  mutate(target = source,
+         source = negated_source,
+         link_type = "neg"))
+causes_of_negations = edges_df %>% 
+  filter(link_type=="nC") %>%
+  mutate(source = negated_source,
+         link_type = "pC")
+results_of_negations = edges_df %>% 
+  filter(link_type=="nR") %>%
+  mutate(source = negated_source,
+         link_type = "pR")
+edges_df = edges_df %>%
+  filter(!(link_type %in% c("nC", "nR"))) %>%
+  rbind(negations) %>% rbind(causes_of_negations) %>% rbind(results_of_negations) %>%
+  unique() %>%
+  mutate(old_target = target,
+         old_source = source,
+         target = ifelse(link_type=="pC", old_source, target),
+         source = ifelse(link_type=="pC", old_target, source),
+         link_type = ifelse(link_type=="pC", "pR", link_type)) %>%
+  select(-old_target, -old_source)
+
+edges_df = edges_df %>%
+  # hard code graph similarity merges
+  # mutate(source = ifelse(source=="NOT(P is not ill)", "P is ill", source),
+  #        target = ifelse(target=="NOT(P is not ill)", "P is ill", target)) %>%
+  # mutate(source = ifelse(source=="NOT(Lung cancer)", "P doesn't have lung cancer", source),
+  #        target = ifelse(target=="NOT(Lung cancer)", "P doesn't have lung cancer", target)) %>%
+  # mutate(source = ifelse(source=="NOT(P is ill)", "P is not ill", source),
+  #        target = ifelse(target=="NOT(P is ill)", "P is not ill", target)) %>%
+  unique()
+
+workers$number_of_unique_nodes[which(workers$workerid==worker_to_graph)] = nrow(edges_df)
+
+edges = matrix(c(edges_df$source, edges_df$target), ncol=2) %>%
+  t %>% c
+
+link_colors = link_color_map[edges_df$link_type]
+
+g = make_graph(edges, directed=T)
+
+nodes = names(V(g))
+
+# get node locations
+row_pos = node_positions$r
+names(row_pos) = node_positions$variable
+col_pos = node_positions$c
+names(col_pos) = node_positions$variable
+
+negations = w %>% filter(variable%in%c("nR", "nC", "D", "pR", "pC")) %>%
+  mutate(positive_response = negated_response,
+         #paste("NOT(", positive_response, ")", sep=""),
+         variable = paste("-", variable, sep=""))
+nodes_df = w %>% 
+  rbind(negations) %>%
+  group_by(positive_response) %>%
+  summarise(variable = variable[1])
+first_vars = char(nodes_df$variable)
+names(first_vars) = nodes_df$positive_response
+
+positions = data.frame(
+  positive_response = nodes,
+  variable = first_vars[nodes],
+  stringsAsFactors = F) %>%
+  mutate(r = row_pos[char(variable)],
+         c = col_pos[char(variable)])
+
+g_layout = matrix(c(positions$r, positions$c), byrow=F, ncol=2)
+
+# pdf(file=paste("graphs/s", worker_to_graph, ".pdf", sep=""))
+png(file=paste("graphs/s", worker_to_graph, ".png", sep=""), width=1500, height=1200)
+plot(g,
+     vertex.size=0,
+     vertex.label.cex=2,
+     vertex.label.color="black",
+     vertex.label.dist=0,
+     vertex.color="black",
+     edge.width=2,
+     edge.color=link_colors,
+     layout=g_layout,
+     edge.arrow.size=1,
+     edge.arrow.width=1)
+# plot(g,
+#      vertex.size=1,
+#      vertex.label.cex=0.5,
+#      vertex.label.color="black",
+#      vertex.label.dist=1.5,
+#      edge.color=link_colors,
+#      layout=g_layout,
+#      edge.arrow.size=0.5
+#      )
+dev.off()
+}
+```
+
+```{r}
+diseases = df %>% group_by(workerid) %>% summarise(disease = disease[1],
+                                                   assess = assess[1],
+                                                   enjoyment = enjoyment[1])
+assess_vals = setNames(as.character(diseases$assess), char(diseases$workerid))
+enjoyment_vals = setNames(as.character(diseases$enjoyment), char(diseases$workerid))
+diseases = setNames(as.character(diseases$disease), char(diseases$workerid))
+workers = workers %>%
+  mutate(disease = diseases[char(workerid)],
+         assess = assess_vals[char(workerid)],
+         enjoyment = enjoyment_vals[char(workerid)]) %>%
+  mutate(enjoyment = ifelse(is.na(enjoyment), "no response", enjoyment),
+         enjoyment = factor(enjoyment, levels = c("-1", "0", "1", "no response"), labels=c("worse than average", "average", "better than average", "no response")))
+# workers %>%
+#   ggplot(., aes(x=number_of_unique_nodes)) +
+#   geom_histogram() +
+#   facet_wrap(~disease)
+# comple_graphs = workers %>%
+#   group_by(disease) %>%
+#   summarise(number_of_complete_graphs = sum(number_of_unique_nodes>=16))
+# comple_graphs %>%
+#   ggplot(., aes(x=disease, y=number_of_complete_graphs)) +
+#   geom_bar(stat="identity", fill="lightgray", colour="darkgray") +
+#   theme_few(24)
+# ggsave("nSs_completed.png", width=6, height=4)
+# chisq.test(comple_graphs$number_of_complete_graphs)
+workers %>%
+  mutate(complete = ifelse(number_of_unique_nodes>=16, "provided all unique nodes", "repeated nodes")) %>%
+  ggplot(., aes(x=complete, colour=complete, fill=complete)) +
+  scale_colour_grey() +
+  scale_fill_grey() +
+  geom_bar(stat="count", alpha=0.7, size=3) +
+  theme_few(28) +
+  theme(axis.line=element_blank(),
+        panel.border=element_blank(),
+        legend.position = "none") +
+  ylab("number of participants") +
+  xlab("") +
+  annotate("text",
+           label=paste(round(mean(workers$number_of_unique_nodes>=16),3)*100, "%", sep=""),
+           x=1, y=6, size=12#,
+           #colour=scale_colour_grey()$palette(2)[1]
+           ) +
+  annotate("text",
+           label=paste(round(mean(workers$number_of_unique_nodes<16),3)*100, "%", sep=""),
+           x=2, y=6, size=12#,
+           #colour=scale_colour_grey()$palette(2)[2]
+           )
+ggsave("completion.png", width=12, height=8)
+workers %>%
+  filter(number_of_unique_nodes<16) %>%
+  ggplot(., aes(x=number_of_unique_nodes)) +
+  geom_histogram(fill="darkgray", colour=scale_colour_grey()$palette(2)[1], size=2) +
+  xlab("number of unique nodes") +
+  theme_few(24) +
+  theme(axis.line=element_blank(),
+        panel.border=element_blank(),
+        legend.position = "none") +
+  ylab("number of participants")
+ggsave("num_unique_nodes.png", width=18, height=4)
+
+workers %>%
+  group_by(enjoyment) %>%
+  summarise(percent_complete = mean(number_of_unique_nodes>=16)) %>%
+  ggplot(., aes(x=enjoyment, colour=enjoyment, fill=enjoyment, y=percent_complete)) +
+  geom_bar(stat="identity", alpha=0.7, 
+           size=3,
+           position="dodge") +
+  scale_colour_grey() +
+  scale_fill_grey() +
+  theme_few(28) +
+  theme(axis.line=element_blank(),
+        panel.border=element_blank()) +
+  ylab("percent complete") +
+  xlab("")
+ggsave("enjoyment.png", width=12, height=8)
+```
+
+
+```{r}
+graph_similarity_counts = matrix(0, nrow=length(nodes), ncol=length(nodes), dimnames = list(nodes, nodes))
+
+# for each node,
+#   check the links going out to see if there are any duplicates.
+#     if so, follow them and increment the nodes that are matched that way
+
+explored = c()
+explore_duplicates = function(reference_nodes, graph_df, ignore=c(), depth=0, max_depth=4) {
+  if (paste(reference_nodes, collapse = " ") %in% explored) {
+    pass = T
+  } else {
+    explored = c(explored, paste(reference_nodes, collapse = " "))
+  out = graph_df %>% filter(source %in% reference_nodes & !(target %in% ignore))
+  out_counts = table(out$link_type)
+  duplicate_links = names(out_counts)[which(out_counts>1)]
+  for (duplicate_link in duplicate_links) {
+    nodes_to_increment = (out %>% filter(link_type == duplicate_link))$target
+    for (n1 in nodes_to_increment) {
+      for (n2 in nodes_to_increment) {
+        if (n1!=n2) {
+          graph_similarity_counts[n1, n2] <<- graph_similarity_counts[n1, n2] + 1
+        }
+      }
+    }
+    if (depth<max_depth) {
+      explore_duplicates(nodes_to_increment, graph_df, ignore=reference_nodes, depth=depth+1, max_depth=max_depth)
+    }
+  }
+  
+  into = graph_df %>% filter(target %in% reference_nodes & !(source %in% ignore))
+  into_counts = table(into$link_type)
+  duplicate_links = names(into_counts)[which(into_counts>1)]
+  for (duplicate_link in duplicate_links) {
+    nodes_to_increment = (into %>% filter(link_type == duplicate_link))$source
+    for (n1 in nodes_to_increment) {
+      for (n2 in nodes_to_increment) {
+        if (n1!=n2) {
+          graph_similarity_counts[n1, n2] <<- graph_similarity_counts[n1, n2] + 1
+        }
+      }
+    }
+    if (depth<max_depth) {
+      explore_duplicates(nodes_to_increment, graph_df, ignore=reference_nodes, depth=depth+1, max_depth=max_depth)
+    }
+  }
+  }
+}
+
+for (node in nodes) {
+  explore_duplicates(c(node), edges_df)
+}
+
+mergeables = as.data.frame(graph_similarity_counts) %>%
+  mutate(n1 = row.names(.)) %>%
+  gather("n2", "similarity", num(row.names(.))) %>%
+  filter(similarity > 0)
+mergeables
+```
+
+
+```{r}
+all_edges_df_with_duplicates = do.call(rbind, lapply(unique(df$workerid), function(worker_to_graph) {
+  w = df %>%
+    select(response, positive_response, variable, workerid) %>%
+    filter(workerid==worker_to_graph) %>%
+    filter(!is.na(response))
+  responses = w$positive_response
+  names(responses) = w$variable
+  
+  edges_df = full_graph_structure %>%
+    select(source, target, link_type) %>%
+    filter(target %in% w$variable & source %in% w$variable) %>%
+    mutate(source = responses[source],
+           target = responses[target])
+  
+  ## make negations of D, pC, nC, nR, pR
+  negations = edges_df %>% 
+    filter(link_type %in% c("nC", "nR")) %>%
+    mutate(target = paste("NOT(", source, ")", sep=""),
+           link_type = "neg") %>%
+    rbind(edges_df %>% 
+            filter(link_type %in% c("nC", "nR")) %>%
+            mutate(target = source,
+                   source = paste("NOT(", source, ")", sep=""),
+                   link_type = "neg"))
+  cause_negations = edges_df %>% 
+    filter(link_type=="nC") %>%
+    mutate(source = paste("NOT(", source, ")", sep=""),
+           link_type = "pC")
+  result_negations = edges_df %>% 
+    filter(link_type=="nR") %>%
+    mutate(source = paste("NOT(", source, ")", sep=""),
+           link_type = "pR")
+  edges_df = edges_df %>%
+    filter(!(link_type %in% c("nC", "nR"))) %>%
+    rbind(negations) %>% rbind(cause_negations) %>% rbind(result_negations)
+  return(edges_df)
+}))
+all_edges_df = all_edges_df_with_duplicates
+```
+
+
+```{r}
+edges = matrix(c(all_edges_df$source, all_edges_df$target), ncol=2) %>%
+  t %>% c
+
+link_colors = link_color_map[all_edges_df$link_type]
+
+g = make_graph(edges, directed=T)
+
+nodes = names(V(g))
+
+# get node locations
+row_pos = node_positions$r
+names(row_pos) = node_positions$variable
+col_pos = node_positions$c
+names(col_pos) = node_positions$variable
+
+negations = w %>% filter(variable%in%c("nR", "nC", "D", "pR", "pC")) %>%
+  mutate(positive_response = paste("NOT(", positive_response, ")", sep=""),
+         variable = paste("-", variable, sep=""))
+nodes_df = w %>% 
+  rbind(negations) %>%
+  group_by(positive_response) %>%
+  summarise(variable = variable[1])
+first_vars = nodes_df$variable
+names(first_vars) = nodes_df$positive_response
+
+positions = data.frame(
+  positive_response = nodes,
+  variable = first_vars[nodes],
+  stringsAsFactors = F) %>%
+  mutate(r = row_pos[char(variable)],
+         c = col_pos[char(variable)])
+
+g_layout = matrix(c(positions$r, positions$c), byrow=F, ncol=2)
+
+# pdf(file=paste("graphs/s", worker_to_graph, ".pdf", sep=""))
+plot(g,
+     vertex.size=1,
+     # vertex.label=NA,
+     vertex.label.cex=0.5,
+     vertex.label.color="black",
+     vertex.label.dist=1.5,
+     edge.color=link_colors,
+     # layout=g_layout,
+     edge.arrow.size=0.25
+     )
+# dev.off()
+```
+
+```{r}
+explored = c()
+graph_similarity_counts = matrix(0, nrow=length(nodes), ncol=length(nodes), dimnames = list(nodes, nodes))
+
+for (node in nodes) {
+  explore_duplicates(c(node), all_edges_df, max_depth = 1)
+}
+```
+
+```{r}
+# max_rows = 10
+# # keep = rownames(graph_similarity_counts[1:max_rows, 1:max_rows])[rowSums(graph_similarity_counts[1:max_rows, 1:max_rows])>10]
+# keep = 1:max_rows
+# gs = graph_similarity_counts[keep,keep]
+# keep = rownames(gs)[rowSums(gs)>0]
+# gs = graph_similarity_counts[keep,keep]
+# mergeables = as.data.frame(gs) %>%
+#   mutate(n1 = row.names(.)) %>%
+#   gather("n2", "similarity", num(row.names(.)))
+# mergeables %>% ggplot(., aes(x=n1, y=n2, fill=similarity)) +
+#   geom_tile() +
+#   theme(axis.text.x=element_text(angle=90, hjust=1))#+
+#   # theme(axis.text.x = element_blank())
+```
+
+
+
+
+```{r}
+# for each (call it "central") node,
+#   for each other (call it "peripheral") node,
+#     what pattern(s) connect(s) the two?
+#   do any peripheral nodes share patterns?
+#   if they do, adjust the count for that pair up
+# look at the counts: are node pairs with high counts similar?
+graph_similarity_counts = matrix(0, nrow=length(nodes), ncol=length(nodes), dimnames = list(nodes, nodes))
+for (central_node in nodes) {
+  signatures_for_nodes = list()
+  for (peripheral_node in nodes) {
+    # find path(s) between the two
+    paths = all_simple_paths(g, from=central_node, to=peripheral_node, mode="all")
+    # for each path, get the corresponding link pattern
+    path_signatures = c()
+    for (path in paths) {
+      nodes_visited = nodes[path]
+      previous_node = nodes_visited[[1]]
+      path_signature = ""
+      for (path_node in nodes_visited[2:length(nodes_visited)]) {
+        link_pattern = paste((all_edges_df %>% filter((source==previous_node & target==path_node) | (target==previous_node & source==path_node)))$link_type, collapse="+")
+        if (nchar(link_pattern) > 0) {
+          path_signature = paste(path_signature, link_pattern, sep=" ")
+        }
+        previous_node = path_node
+      }
+      if (nchar(path_signature) > 0) {
+        path_signatures = c(path_signatures, path_signature)
+      }
+    }
+    signatures_for_nodes[[peripheral_node]] = path_signatures
+  }
+  # if any peripheral nodes have matching patterns off of the central node, increment their counts
+  for (node1 in names(signatures_for_nodes)) {
+    for (node2 in names(signatures_for_nodes)) {
+      if (node1!=node2 & length(intersect(signatures_for_nodes[[node1]], signatures_for_nodes[[node2]])) > 0) {
+        graph_similarity_counts[node1, node2] = graph_similarity_counts[node1, node2] + 1
+      }
+    }
+  }
+}
+similarity_df = expand.grid(node1=nodes, node2=nodes) %>%
+  mutate(similarity = mapply(function(node1, node2) {
+    if (node1 != node2 & graph_similarity_counts[node1, node2] > 0) {
+      return(graph_similarity_counts[node1, node2])
+    } else {
+      return(0)
+    }
+  }, node1, node2))
+similarity_df %>% filter(similarity == max(similarity_df$similarity))
+```
+```{r}
+all_simple_paths(g, from="NOT(P smoked)", to="Lung cancer")
+
+central_node = "NOT(P didnt smoke)"
+peripheral_node = "Lung cancer"
+```
+
+
