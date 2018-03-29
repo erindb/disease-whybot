@@ -48,6 +48,11 @@ df$negated_response = gsub(
 df = df %>% mutate(negated_response = ifelse(variable=="D", paste("not", positive_response), negated_response))
 ```
 
+```{r}
+write.table(unique(df$response), file="sentences.csv", row.names = F, quote=F, col.names = F)
+```
+
+
 
 ```{r}
 # nodes = w0$response
@@ -333,12 +338,12 @@ rescaling = (matrix(rep(x, length(x)) + rep(x, rep(length(x), length(x))), ncol=
 sim = sim/(rescaling)
 
 diag(sim) = 0
-cutoff = quantile(sim, .9995)
+cutoff = quantile(sim, .99)
 fewer_sentences = c()
 synsets = c()
 # for (i in 1:nrow(sim)) {
 for (i in 1:100) {
-  mini_cutoff = quantile(sim[i,], 0.999)
+  mini_cutoff = quantile(sim[i,], 0.99)
   close_nodes = (names(V(g))[which(sim[i,] > max(cutoff, mini_cutoff))])#[order(sim[i,][which(sim[i,] > max(cutoff, mini_cutoff))])]
   if (length(close_nodes) > 0) {
     close_nodes = c(names(V(g))[i], close_nodes)
@@ -427,6 +432,41 @@ res_overlap = t(adj_res %*% diag(nrow(adj_res))) %*% (adj_res %*% diag(nrow(adj_
 overlap_m = cause_overlap + res_overlap + neg_overlap
 ```
 
+```{r}
+write.table(fewer_sentences, "winning_sentences.csv", row.names = F, quote = F)
+get_graph_distances = function(s1, s2) {
+  if (length(sim[which(names(V(g))==s1), which(names(V(g))==s2)])>0) {
+    return(sim[which(names(V(g))==s1), which(names(V(g))==s2)])
+  } else {
+    return(0)
+  }
+  # return(sim[which(names(V(g))==s1), which(names(V(g))==s2)])
+}
+distances = read.csv("skip-thoughts-master/distances_whybot_experiment1.tsv",
+                     sep="\t", header = F,
+                     col.names = c("cos", "euc", "s1", "s2")) %>%
+  mutate(graph = mapply(get_graph_distances, s1, s2))
+head(distances)
+
+distances
+```
+
+```{r}
+ggplot(NULL, aes(x=distances$cos, y=distances$graph)) +
+  geom_point()
+cor.test(distances$cos, distances$graph)
+ggplot(NULL, aes(x=distances$euc, y=distances$graph)) +
+  geom_point()
+ggplot(NULL, aes(y=distances$euc, x=distances$graph)) +
+  geom_point() +theme_few() + ylab("skipthought") + xlab("graph similarity")
+ggsave("compare.png", x=12, y=8)
+cor.test(distances$euc, distances$graph)
+
+
+```
+
+
+
 
 ```{r}
 similarity_m = overlap_m
@@ -504,6 +544,13 @@ round(m / max(m),2)
 
 ((single_step %*% single_step %*% single_step %*% single_step %*% single_step) > 0) +0
 ```
+
+
+
+
+
+
+
 
 
 
@@ -861,7 +908,6 @@ for (node in nodes) {
 
 
 
-
 ```{r}
 # for each (call it "central") node,
 #   for each other (call it "peripheral") node,
@@ -913,6 +959,8 @@ similarity_df = expand.grid(node1=nodes, node2=nodes) %>%
   }, node1, node2))
 similarity_df %>% filter(similarity == max(similarity_df$similarity))
 ```
+
+
 ```{r}
 all_simple_paths(g, from="NOT(P smoked)", to="Lung cancer")
 
