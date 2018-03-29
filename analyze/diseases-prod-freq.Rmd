@@ -1,0 +1,21 @@
+---
+title: "whybot disease production frequency"
+output: html_notebook
+---
+
+Here's a quick notebook to look at the diseases people came up with. I cleaned them by hand a bit, and we'll clean up a little more here.
+
+```{r fig.asp=.75}
+library(tidyverse)
+library(stringr)
+diseases <- read.csv("../data/diseases-processed.csv", stringsAsFactors = FALSE)
+
+diseases %>% 
+  mutate(Response=str_to_lower(Response)) %>%
+  mutate(Response=factor(Response, levels=names(sort(table(Response), decreasing=TRUE)))) %>%
+  ggplot(aes(x=Response)) + 
+  geom_bar(stat="count") + 
+  theme_minimal(base_size = 14) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
