@@ -32,12 +32,156 @@ M = matrix(V, nrow = nrow(X), dimnames = list(sentences, sentences))
 ```
 
 ```{r}
-D = dist(1 - M)
+D = as.dist(1 - M)
 ```
 
 ```{r}
-H = hclust(D)
+sort(M["he can exercise everyday.",], decreasing=T)[1:5]
+sort(M["he can do more things in life.",], decreasing=T)[1:5]
 ```
+
+
+```{r}
+graph_structure = (function() {
+  transforms = c("p", "n")
+  frames = c("C", "R")
+  n_link_types = length(transforms)*length(frames)
+  
+  graph_structure = data.frame(
+    transform1 = c(rep(rep(transforms, c(2,2)), 1),
+                   rep(rep(transforms, c(8,8)), 1)),
+    frame1 = c(rep(rep(frames, c(1,1)), 2),
+               rep(rep(frames, c(4,4)), 2)),
+    transform2 = c(rep("", n_link_types),
+                   rep(rep(transforms, c(2,2)), 4)),
+    frame2 = c(rep("", n_link_types),
+               rep(rep(frames, c(1,1)), 8)),
+    stringsAsFactors=F) %>%
+    filter(frame1==frame2 | transform1!=transform2) %>%
+    mutate(var1 = paste(transform1, frame1, sep=""),
+           var2 = paste(transform2, frame2, sep=""),
+           variable = paste(var1, var2, sep="")) %>%
+    mutate(source = ifelse(var2=="", "D", var1),
+           target = variable,
+           link_type = ifelse(var2=="", var1, var2)) %>%
+    select(source, target, link_type)
+  
+  negations = graph_structure %>% 
+    # make negation links
+    filter(link_type %in% c("nC", "nR")) %>%
+    mutate(target = paste("-", source, sep=""),
+           link_type = "neg") %>%
+    rbind(graph_structure %>% 
+            filter(link_type %in% c("nC", "nR")) %>%
+            mutate(target = source,
+                   source = paste("-", source, sep=""),
+                   link_type = "neg"))
+  
+  # If link type is nC, that means that it caused something to not happen.
+  # So it becomes a positive cause of the negation.
+  causes_of_negations = graph_structure %>% 
+    filter(link_type=="nC") %>%
+    mutate(source = paste("-", source, sep=""),
+           link_type = "pC")
+  
+  results_of_negations = graph_structure %>% 
+    filter(link_type=="nR") %>%
+    mutate(source = paste("-", source, sep=""),
+           link_type = "pR")
+  
+  graph_structure = graph_structure %>%
+    filter(!(link_type %in% c("nC", "nR"))) %>%
+    rbind(negations) %>% rbind(causes_of_negations) %>%
+    rbind(results_of_negations) %>%
+    mutate(old_target = target,
+           old_source = source,
+           target = ifelse(link_type=="pC", old_source, target),
+           source = ifelse(link_type=="pC", old_target, source),
+           link_type = ifelse(link_type=="pC", "pR", link_type)) %>%
+    select(-old_target, -old_source)
+  
+  reverse_negations = graph_structure %>%
+    filter(link_type=="neg") %>%
+    mutate(old_target = target,
+           old_source = source,
+           source = target,
+           target = source) %>%
+    select(source, target, link_type)
+  
+  return(rbind(graph_structure, reverse_negations))
+})()
+```
+
+
+```{r}
+# given a candidate merge,
+# try it out and 
+# check for self-negations
+raw_df = read.csv("../../data/experiment1/all_data.csv") %>%
+  mutate(response = char(response)) %>%
+  filter(!(workerid %in% c(3,4,5,6))) %>%
+  select(workerid, response, variable, negated_response) %>%
+  mutate(negated_response = gsub("<span class='variable_word (name|he)'>\\{\\{\\}\\}</span>",
+                                 "he",
+                                 negated_response),
+         negated_response = gsub("<span class='variable_word (him)'>\\{\\{\\}\\}</span>",
+                                 "him",
+                                 negated_response),
+         negated_response = gsub("<span class='variable_word (his)'>\\{\\{\\}\\}</span>",
+                                 "his",
+                                 negated_response)) %>%
+  mutate(negated_response = ifelse(variable=="D", paste("not", response), negated_response))
+df = do.call(rbind, lapply(unique(raw_df$workerid), function(worker_to_graph) {
+  
+  w = raw_df %>%
+    select(response, negated_response, variable, workerid) %>%
+    filter(workerid==worker_to_graph) %>%
+    filter(!is.na(response))
+  responses = w$response
+  names(responses) = w$variable
+  negated_responses = w$negated_response
+  names(negated_responses) = w$variable
+  
+  edges_df = graph_structure %>%
+    select(source, target, link_type) %>%
+    mutate(source = char(source),
+           target = char(target),
+           link_type = char(link_type)) %>%
+    filter(target %in% w$variable & source %in% w$variable) %>%
+    mutate(negated_source = negated_responses[source],
+           source = responses[source],
+           target = responses[target]) %>%
+    mutate(negated_source = ifelse(is.na(negated_source), paste("NOT(", source, ")", sep=""), negated_source)) %>%
+    unique()
+  
+  return(edges_df)
+})) %>% unique()
+
+g = make_graph(as.matrix(df %>%select(source, target)) %>% t %>% c, directed=T)
+E(g)$label = df$link_type
+```
+
+```{r}
+get_self_negations = function(g) {
+  negations_graph = subgraph.edges(graph=g, eids=which(E(g)$label=="neg"), delete.vertices = F)
+  negations_mtx = negations_graph %>% as_adj
+  return(diag(negations_mtx))
+}
+```
+
+
+```{r}
+mapping = 1:719
+merged_graph = contract(g, mapping, vertex.attr.comb = igraph_opt("vertex.attr.comb"))
+self_negations = get_self_negations(merged_graph)
+
+V(g)[which(self_negations==0)]
+```
+
+
+
+
+
 
 
 
