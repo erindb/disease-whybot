@@ -32,13 +32,77 @@ M = matrix(V, nrow = nrow(X), dimnames = list(sentences, sentences))
 ```
 
 ```{r}
-D = dist(1 - M)
-```
-
-```{r}
+D = as.dist(1 - M)
 H = hclust(D)
 ```
 
+```{r}
+library(tidyverse)
 
+lowest_merges <- H$merge[1:100,] %>% 
+  as_tibble() %>%
+  filter(V1 < 0, V2 < 0)
+
+similar_sentences1 <- sentences[-lowest_merges$V1]
+similar_sentences2 <- sentences[-lowest_merges$V2]
+paste(similar_sentences1, " - ", similar_sentences2)
+
+interesting_sentences <- c(89, 90, 97, 158, 155, 171, 177, 186, 235, 249)
+
+i <- 89
+Row <- M[i,]
+sentences[][1:25]
+
+sort(Row, decreasing=TRUE)[1:10]
+```
+
+```{r}
+
+get_similar <- function(index, n=20) {
+  ## gets 20 most similar sentences (w/ similarity)
+  ## while accounting for negation
+  ## uses a crude heuristic:
+  ## detects presence of negation in sentence
+  ## compares only to sentences w/ same negation status
+
+  i <- index
+  negation_words <- c(
+    "n't",
+    "\\<not",
+    "\\<cannot",
+    "\\<never",
+    "\\<didnt",
+    "\\<no",
+    "\\<doesnt",
+    "\\<cant",
+    "\\<wont",
+    "\\<shouldnt",
+    "\\<couldnt"
+  )
+
+  neg_search <- paste0("(", paste0(negation_words, collapse = "|"), ")")
+
+  # SPLIT sentences into two -- one set w/ negation, one w/out negations
+
+  neg_sentences_ind <- grepl(neg_search, sentences)
+  pos_sentences_ind <- !grepl(neg_search, sentences)
+
+  Row <- M[i, ]
+
+  if (neg_sentences_ind[i]) {
+    sort(Row[neg_sentences_ind], decreasing = TRUE)[1:n]
+  } else {
+    sort(Row[pos_sentences_ind], decreasing = TRUE)[1:n]
+  }
+}
+
+```
+
+```{r}
+# 187 was a problem (e.g.)
+
+get_similar(189)
+
+```
 
 
