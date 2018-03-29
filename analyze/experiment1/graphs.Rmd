@@ -91,7 +91,6 @@ negations = graph_structure %>%
           mutate(target = source,
                  source = paste("-", source, sep=""),
                  link_type = "neg"))
-
 # If link type is nC, that means that it caused something to not happen.
 # So it becomes a positive cause of the negation.
 causes_of_negations = graph_structure %>% 
@@ -361,6 +360,20 @@ fewer_sentences = unique(fewer_sentences)
 # max(similarity(cause, method=sim_method))
 # mean(similarity(cause, method=sim_method)==t(similarity(res, method=sim_method)))
 ```
+
+```{r}
+means_the_same = c("P didn't smoke", "P doesnt smoke")
+means_negation = c("Lung cancer", "P doesnt have lung cancer")
+
+
+"n't"
+"not"
+"didnt"
+"never"
+"no"
+
+```
+
 
 ```{r}
 m = matrix(0, nrow=length(fewer_sentences), ncol=length(fewer_sentences), dimnames = list(fewer_sentences, fewer_sentences))
