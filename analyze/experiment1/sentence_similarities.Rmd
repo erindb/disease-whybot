@@ -229,18 +229,14 @@ E(g)$label = df$link_type
 ```
 
 ```{r}
-get_self_negations = function(g) {
-  negations_graph = subgraph.edges(graph=g, eids=which(E(g)$label=="neg"), delete.vertices = F)
-  negations_mtx = negations_graph %>% as_adj
-  return(diag(negations_mtx))
-}
+adjacency_matrix = as_adj(g)
 ```
 
 
 ```{r}
-mapping = 1:719
-merged_graph = contract(g, mapping, vertex.attr.comb = igraph_opt("vertex.attr.comb"))
-self_negations = get_self_negations(merged_graph)
-
-V(g)[which(self_negations==0)]
+a = matrix(c(0,0,1,0,
+             0,0,1,0,
+             0,0,0,0,
+             1,0,0,0), ncol=4, byrow=T)
+a %*% a
 ```
