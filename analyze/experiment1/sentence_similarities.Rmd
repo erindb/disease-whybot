@@ -240,3 +240,9 @@ a = matrix(c(0,0,1,0,
              1,0,0,0), ncol=4, byrow=T)
 a %*% a
 ```
+
+
+```{r}
+mapping = 1:719
+merged_graph = contract(g, mapping, vertex.attr.comb = igraph_opt("vertex.attr.comb"))
+```
