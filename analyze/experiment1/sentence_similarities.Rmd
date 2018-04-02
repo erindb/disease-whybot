@@ -171,12 +171,14 @@ graph_structure = (function() {
     filter(link_type=="neg") %>%
     mutate(old_target = target,
            old_source = source,
-           source = target,
-           target = source) %>%
+           source = old_target,
+           target = old_source) %>%
     select(source, target, link_type)
   
   return(rbind(graph_structure, reverse_negations))
 })()
+
+abstract_g = make_graph(as.matrix(graph_structure %>%select(source, target)) %>% t %>% c, directed=T)
 ```
 
 
@@ -184,10 +186,13 @@ graph_structure = (function() {
 # given a candidate merge,
 # try it out and 
 # check for self-negations
+
+# read data from js experiment
 raw_df = read.csv("../../data/experiment1/all_data.csv") %>%
-  mutate(response = char(response)) %>%
+  # filter test and unfinished workers
   filter(!(workerid %in% c(3,4,5,6))) %>%
-  select(workerid, response, variable, negated_response) %>%
+  # cleanup responses
+  mutate(response = char(response)) %>%
   mutate(negated_response = gsub("<span class='variable_word (name|he)'>\\{\\{\\}\\}</span>",
                                  "he",
                                  negated_response),
@@ -197,29 +202,46 @@ raw_df = read.csv("../../data/experiment1/all_data.csv") %>%
          negated_response = gsub("<span class='variable_word (his)'>\\{\\{\\}\\}</span>",
                                  "his",
                                  negated_response)) %>%
-  mutate(negated_response = ifelse(variable=="D", paste("not", response), negated_response))
+  mutate(negated_response = ifelse(variable=="D", paste("not", response), negated_response)) %>%
+  select(workerid, response, variable, negated_response)
+
 df = do.call(rbind, lapply(unique(raw_df$workerid), function(worker_to_graph) {
-  
+  # filter to a single worker's data
   w = raw_df %>%
     select(response, negated_response, variable, workerid) %>%
     filter(workerid==worker_to_graph) %>%
     filter(!is.na(response))
+  # make a mapping from variables to responses
   responses = w$response
   names(responses) = w$variable
+  # make a mapping from variables to negated responses
   negated_responses = w$negated_response
   names(negated_responses) = w$variable
   
   edges_df = graph_structure %>%
+    # transform from abstract graph to this particular worker's responses
     select(source, target, link_type) %>%
-    mutate(source = char(source),
-           target = char(target),
+    mutate(source_variable = char(source),
+           target_variable = char(target),
            link_type = char(link_type)) %>%
-    filter(target %in% w$variable & source %in% w$variable) %>%
-    mutate(negated_source = negated_responses[source],
-           source = responses[source],
-           target = responses[target]) %>%
-    mutate(negated_source = ifelse(is.na(negated_source), paste("NOT(", source, ")", sep=""), negated_source)) %>%
+    filter((target_variable %in% w$variable) & (source %in% w$variable)) %>%
+    mutate(negated_source = negated_responses[source_variable],
+           source = responses[source_variable],
+           target = responses[target_variable]) %>%
+    mutate(negated_source = ifelse(is.na(negated_source),
+                                   paste("NOT(", source, ")", sep=""),
+                                   negated_source)) %>%
+    # make sure negations have negated_source
+    mutate(source = ifelse(link_type=="neg", negated_source, source)) %>%
+    select(source, target, link_type) %>%
     unique()
+  
+  # # make negation links in the other direction
+  # edges_df = rbind(edges_df, edges_df %>%
+  #                    filter(link_type=="neg") %>%
+  #                    mutate(old_source = source, old_target = target) %>%
+  #                    mutate(source = old_target, target = old_source) %>%
+  #                    select(source, target, link_type))
   
   return(edges_df)
 })) %>% unique()
@@ -227,6 +249,14 @@ df = do.call(rbind, lapply(unique(raw_df$workerid), function(worker_to_graph) {
 g = make_graph(as.matrix(df %>%select(source, target)) %>% t %>% c, directed=T)
 E(g)$label = df$link_type
 ```
+
+```{r}
+get_self_negations = function(g) {
+  neg_g = subgraph.edges(g, E(g)[E(g)$label=="neg"], delete.vertices = F)
+  return(as_adj(neg_g) %>% diag)
+}
+```
+
 
 ```{r}
 adjacency_matrix = as_adj(g)
