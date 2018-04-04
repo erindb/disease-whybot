@@ -84,6 +84,10 @@ get_similar <- function(index, n=20) {
   }
 }
 
+## I think I could make this work better if I just propogate through the synonymy when I record the responses 
+## So when S1 is synonymous with S2, also add entries for S1 synonymous with all of S2's synonyms
+## That would accomplish this root thing more cleanly.
+
 get_root_sentences <- function(merged_df, candidate_sentences) {
   # for the candidate sentences 
   
