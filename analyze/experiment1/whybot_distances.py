@@ -46,8 +46,6 @@ for line in open("data.tsv"):
         sentence_embeddings.append(embedding)
         sentences.append(orig_datum["sentence"])
 
-print (sentences)
-
 open("sentences_to_go_with_cosine_similarities.txt", "w").write("\n".join(sentences))
 
 sentence_embeddings = np.matrix(sentence_embeddings)
