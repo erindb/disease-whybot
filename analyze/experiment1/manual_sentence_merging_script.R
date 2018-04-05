@@ -40,7 +40,7 @@ sentences <- read.delim("../../data/experiment1/sentences_to_go_with_cosine_simi
   header = F
 )$V1
 
-X = read.table("../../data/experiment1/cosine_similarities.txt")
+X = read.table("../../data/experiment1/dissent_cosine_similarities.txt")
 
 V = do.call(c, as.list(X))
 M = matrix(V, nrow = nrow(X), dimnames = list(sentences, sentences))
@@ -115,7 +115,7 @@ get_root_sentences <- function(merged_df, candidate_sentences) {
 
 
 if ("sentence_merging_data.csv" %in% list.files()) {
-  
+
   df_output <- read.csv("sentence_merging_data.csv")
 
   } else {
@@ -147,10 +147,13 @@ for (i in 1:length(sentences)) {
   for (candidate in similar_sentences) {
     
     if (orig_sentence %in% c("diabetes", "lung cancer", "the flu", "")) break # <--- ADD 4th SEED
-    # maybe add showing sentence number and iteration number?
-    existing_entries <- df_output %>% filter(sentence1 == orig_sentence, sentence2 == candidate)
     
-    if (nrow(existing_entries) > 0) break
+    if (!is.null(df_output)) {
+      # maybe add showing sentence number and iteration number?
+      existing_entries <- df_output %>% filter(sentence1 == orig_sentence, sentence2 == candidate)
+      
+      if (nrow(existing_entries) > 0) break
+    }
     
     cat("\014") # clear console
     cat(paste0("Response 1: ", orig_sentence,"\n","Response 2: ", candidate,"\n\n"))
@@ -178,9 +181,9 @@ for (i in 1:length(sentences)) {
                           synonym = ifelse(response == 1, 1, 0))
     
     if (is.null(df_output)) {
-      df_output <- iter_df
+      df_output <<- iter_df
     } else {
-      df_output <- bind_rows(df_output, iter_df)
+      df_output <<- bind_rows(df_output, iter_df)
     }
     
 
