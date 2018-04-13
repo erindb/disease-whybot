@@ -4,9 +4,7 @@
 ##
 ## A few notes:
 ##
-## (1) Sentences that are already merged are not presented as candidates--instead, 
-## for each set of synonymous sentences, only the original or first-merged sentence
-## is shown on subsequent iterations.
+## (1) Sentences that are already merged are not presented as candidates
 ##
 ## (2) Script presents up to 50 candidates, but will exit out early for a sentence 
 ## if 4 candidates in a row were tagged non-synonyms.
@@ -15,12 +13,11 @@
 ##
 ## Unfortunately, it's hard to test a script like this! I'm also not sure how
 ## long coding will take--it depends partly on how many synonyms are found
-## 
 
 ## Also, we should probably not consider the disease labels ("diabetes", "lung cancer", etc) for merging
 
 ## Author: Derek
-## Updated: 4/4/18, 9:28 AM
+## Updated: 4/13/18, 12:02 PM
 
 # # ----------------------------------------
 
@@ -113,6 +110,11 @@ get_root_sentences <- function(merged_df, candidate_sentences) {
   
 }
 
+## ----------------------------------------
+# grab small set of sentences for testing
+
+sentences <- sentences[c(1,4, 7, 8, 11, 20, 21, 23, 22,50)]
+M <- M[c(1,4, 7, 8, 11, 20, 21, 23, 22,50),c(1,4, 7, 8, 11, 20, 21, 23, 22,50)]
 
 if ("sentence_merging_data.csv" %in% list.files()) {
   
@@ -120,7 +122,7 @@ if ("sentence_merging_data.csv" %in% list.files()) {
 
   } else {
   
-  df_output <- NULL
+  df_output <- data.frame()
   
 }
 
@@ -133,23 +135,28 @@ for (i in 1:length(sentences)) {
   if (response == 3) break
   
   orig_sentence <- sentences[i]
-  similar_sentences <- names(get_similar(i, 50)[2:50])
+  similar_sentences <- names(get_similar(i, 9)[2:9])
+  similar_sentences <- similar_sentences[which(!is.na(similar_sentences)) ]
   unmerged_tally <- 0
+  existing_entries <- data.frame()
   
-  
-  if (!is.null(df_output)) {
-    
+  # testing new approach, uncomment to go back
+  if (nrow(df_output) > 0) {
+
     # for each already merged sentence, only consider 1 of the synonymous sentences as a candidate
-    similar_sentences <- get_root_sentences(df_output, similar_sentences)
-    
+    # similar_sentences <- get_root_sentences(df_output, similar_sentences)
+
   }
   
   for (candidate in similar_sentences) {
     
-    if (orig_sentence %in% c("diabetes", "lung cancer", "the flu", "")) break # <--- ADD 4th SEED
-    # maybe add showing sentence number and iteration number?
-    existing_entries <- df_output %>% filter(sentence1 == orig_sentence, sentence2 == candidate)
+    if (orig_sentence %in% c("diabetes", "lung cancer", "the flu", "")) {break} # <--- ADD 4th SEED
     
+    existing_entries <- df_output %>% filter((sentence1 == orig_sentence & sentence2 == candidate) ||
+                                               (sentence2 == orig_sentence & sentence1 == candidate))
+    
+    # maybe add showing sentence number and iteration number?
+
     if (nrow(existing_entries) > 0) break
     
     cat("\014") # clear console
@@ -173,9 +180,29 @@ for (i in 1:length(sentences)) {
     }
     
     ## --- record response
-    iter_df <- data.frame(sentence1 = orig_sentence, 
-                          sentence2 = candidate, 
-                          synonym = ifelse(response == 1, 1, 0))
+    # record symmetrically
+    iter_df <- data.frame(sentence1 = c(orig_sentence, candidate),
+                          sentence2 = c(candidate, orig_sentence),
+                          synonym = rep(ifelse(response == 1, 1, 0),2))
+    
+    # iter_df <- data.frame(sentence1 = orig_sentence, 
+    #                       sentence2 = candidate, 
+    #                       synonym = ifelse(response == 1, 1, 0))
+    
+    # # new approach
+    other_synonyms <- df_output %>%
+      filter(sentence1 == candidate) %>%
+      # filter(synonym == 1) %>%
+      mutate(sentence1 = orig_sentence) %>%
+      bind_rows(
+        df_output %>%
+          filter(sentence2 == candidate) %>%
+          # filter(synonym == 1) %>%
+          mutate(sentence2 = orig_sentence)
+      ) %>% distinct() # not sure why I need this?
+    
+    iter_df <- bind_rows(iter_df, other_synonyms)
+
     
     if (is.null(df_output)) {
       df_output <- iter_df
