@@ -20,40 +20,19 @@ from sklearn.metrics.pairwise import cosine_similarity
 import pandas as pd
 from sys import exit
 
-data = []
+encoder = sys.argv[1]#"skip-thoughts"
 
-i=-1
-previous_embedding = None
-header = None
+embeddings_file = "../../data/experiment1/{}_embeddings_mtx.txt".format(encoder)
+similarities_file = "../../data/experiment1/{}_cosine_similarities.txt".format(encoder)
 
-# # winning_sentences = [line[:-1] for line in open("/Users/erindb/Projects/all_projects/whybot/analyze/experiment1/sentences.csv").readlines()]
-# winning_sentences = [line[:-1] for line in open("/Users/erindb/Projects/all_projects/whybot/analyze/experiment1/winning_sentences.csv").readlines()]
-# # winning_sentences = list(set(winning_sentences))
+sentences = [line[:-1] for line in open("../../data/experiment1/sentences_to_go_with_cosine_similarities.txt").readlines()]
 
-sentence_embeddings = []
-sentences = []
-for line in open("data.tsv"):
-    i+=1
-    lst = line[:-1].split("\t")
+print("reading embeddings file...")
+sentence_embeddings = np.loadtxt(embeddings_file)
 
-    if i == 0:
-        header = lst
-
-    else:
-        orig_datum = {header[h]: lst[h] for h in range(len(header))}
-        # print(orig_datum["sentence"])
-        embedding = [float(x) for x in orig_datum["embedding"].split(" ")]
-        sentence_embeddings.append(embedding)
-        sentences.append(orig_datum["sentence"])
-
-print (sentences)
-
-open("sentences_to_go_with_cosine_similarities.txt", "w").write("\n".join(sentences))
-
-sentence_embeddings = np.matrix(sentence_embeddings)
 print("getting cosine similarities...")
 sim_matrix = cosine_similarity(sentence_embeddings)
 
 print("writing to file...")
-np.savetxt("fewer_cosine_similarities.txt", sim_matrix)
+np.savetxt(similarities_file, sim_matrix)
 

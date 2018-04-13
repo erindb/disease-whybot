@@ -37,7 +37,7 @@ sentences <- read.delim("../../data/experiment1/sentences_to_go_with_cosine_simi
   header = F
 )$V1
 
-X = read.table("../../data/experiment1/cosine_similarities.txt")
+X = read.table("../../data/experiment1/dissent_cosine_similarities.txt")
 
 V = do.call(c, as.list(X))
 M = matrix(V, nrow = nrow(X), dimnames = list(sentences, sentences))
@@ -85,30 +85,30 @@ get_similar <- function(index, n=20) {
 ## So when S1 is synonymous with S2, also add entries for S1 synonymous with all of S2's synonyms
 ## That would accomplish this root thing more cleanly.
 
-get_root_sentences <- function(merged_df, candidate_sentences) {
-  # for the candidate sentences 
-  
-  # see if they've already been merged
-  merged_sentences <- unique(merged_df$sentence2)
-  already_merged <- candidate_sentences[which( (candidate_sentences %in% merged_sentences))]
-  processed_candidates <- candidate_sentences[which( !(candidate_sentences %in% merged_sentences))]
-  
-  # get the sentences they're each merged with
-  
-  for (sentence in already_merged) {
-    
-    merges <- merged_df %>%
-      filter(sentence2 == sentence, synonym == 1)
-    
-    # consider the original "head" sentence as candidate for merging
-    head_sentence <- merges$sentence1[1] %>% as.character()
-    processed_candidates <- c(processed_candidates, head_sentence)
-  }
-  
-  # return unique candidates
-  candidates <- unique(processed_candidates)
-  
-}
+# get_root_sentences <- function(merged_df, candidate_sentences) {
+#   # for the candidate sentences 
+#   
+#   # see if they've already been merged
+#   merged_sentences <- unique(merged_df$sentence2)
+#   already_merged <- candidate_sentences[which( (candidate_sentences %in% merged_sentences))]
+#   processed_candidates <- candidate_sentences[which( !(candidate_sentences %in% merged_sentences))]
+#   
+#   # get the sentences they're each merged with
+#   
+#   for (sentence in already_merged) {
+#     
+#     merges <- merged_df %>%
+#       filter(sentence2 == sentence, synonym == 1)
+#     
+#     # consider the original "head" sentence as candidate for merging
+#     head_sentence <- merges$sentence1[1] %>% as.character()
+#     processed_candidates <- c(processed_candidates, head_sentence)
+#   }
+#   
+#   # return unique candidates
+#   candidates <- unique(processed_candidates)
+#   
+# }
 
 ## ----------------------------------------
 # grab small set of sentences for testing
@@ -117,7 +117,7 @@ sentences <- sentences[c(1,4, 7, 8, 11, 20, 21, 23, 22,50)]
 M <- M[c(1,4, 7, 8, 11, 20, 21, 23, 22,50),c(1,4, 7, 8, 11, 20, 21, 23, 22,50)]
 
 if ("sentence_merging_data.csv" %in% list.files()) {
-  
+
   df_output <- read.csv("sentence_merging_data.csv")
 
   } else {
@@ -150,6 +150,7 @@ for (i in 1:length(sentences)) {
   
   for (candidate in similar_sentences) {
     
+
     if (orig_sentence %in% c("diabetes", "lung cancer", "the flu", "")) {break} # <--- ADD 4th SEED
     
     existing_entries <- df_output %>% filter((sentence1 == orig_sentence & sentence2 == candidate) ||
@@ -158,6 +159,15 @@ for (i in 1:length(sentences)) {
     # maybe add showing sentence number and iteration number?
 
     if (nrow(existing_entries) > 0) break
+
+    if (orig_sentence %in% c("diabetes", "lung cancer", "the flu", "")) break # <--- ADD 4th SEED
+    
+    if (!is.null(df_output)) {
+      # maybe add showing sentence number and iteration number?
+      existing_entries <- df_output %>% filter(sentence1 == orig_sentence, sentence2 == candidate)
+      
+      if (nrow(existing_entries) > 0) break
+    }
     
     cat("\014") # clear console
     cat(paste0("Response 1: ", orig_sentence,"\n","Response 2: ", candidate,"\n\n"))
@@ -205,9 +215,9 @@ for (i in 1:length(sentences)) {
 
     
     if (is.null(df_output)) {
-      df_output <- iter_df
+      df_output <<- iter_df
     } else {
-      df_output <- bind_rows(df_output, iter_df)
+      df_output <<- bind_rows(df_output, iter_df)
     }
     
 
