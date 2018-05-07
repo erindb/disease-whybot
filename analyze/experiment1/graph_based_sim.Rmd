@@ -1,0 +1,228 @@
+---
+title: "Graph-based Similarity"
+output: html_notebook
+---
+
+```{r global_options, include=FALSE}
+rm(list=ls())
+knitr::opts_chunk$set(echo=F, warning=F, cache=F, message=F,
+                      sanitiz=T, fig.width = 5, fig.height = 3)
+```
+
+```{r load_settings}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(igraph)
+library(ggthemes)
+library(tidyverse)
+char = as.character
+num = function(x) {return(as.numeric(as.character(x)))}
+library('Matrix')
+```
+
+```{r}
+sentences = read.delim("../../data/experiment1/sentences_to_go_with_cosine_similarities.txt", sep="~", stringsAsFactors = F, header=F)$V1
+dissent_X = read.table("../../data/experiment1/dissent_cosine_similarities.txt")
+skipthoughts_X = read.table("../../data/experiment1/skip-thoughts_cosine_similarities.txt")
+```
+
+```{r}
+# X = skipthoughts_X
+X = dissent_X
+```
+
+```{r}
+V = do.call(c, as.list(X))
+M = matrix(V, nrow = nrow(X), dimnames = list(sentences, sentences))
+```
+
+```{r}
+#abstract_g
+#g
+#df
+#raw_df
+#graph_structure
+#adjacency_matrix
+source("read_graph_experiment1.R")
+```
+
+```{r}
+string_sim = function(Astring, Bstring) {
+  return(M[Astring, Bstring])
+}
+```
+
+```{r}
+get_aligned_similarities = function(aset, bset) {
+  shared_nodes = intersect(aset, bset)
+  aset = setdiff(aset, shared_nodes)
+  bset = setdiff(bset, shared_nodes)
+  aligned_similarities = rep(1, length(shared_nodes))
+  if (length(aset)>1 & length(bset)>1) {
+    #### greedily align remaining nodes
+    unaligned_similarities = string_sim(aset, bset)
+    if (length(unaligned_similarities)>0) {
+      ##### find smaller dimension
+      if (length(aset) < length(bset)) {
+        smaller_dim = 1
+      } else {
+        smaller_dim = 2
+      }
+      ##### align each best match, ignoring duplicates
+      best_matches = apply(
+        unaligned_similarities,
+        smaller_dim,
+        function(vector) {
+          return(names(which.max(vector)))
+        }
+      )
+      best_match_similarities = apply(
+        unaligned_similarities,
+        smaller_dim,
+        function(vector) {
+          max(vector)
+        }
+      )
+      duplicates = best_matches[duplicated(best_matches)]
+      aligned_strings = best_matches[!(best_matches %in% duplicates)]
+      duplicate_strings = best_matches[best_matches %in% duplicates]
+      duplicate_sims = best_match_similarities[best_matches %in% duplicates]
+      aligned_strings = c(aligned_strings, 
+                          duplicate_strings[which.max(duplicate_sims)])
+      #### get aligned similarities
+      aligned_similarities = c(
+        aligned_similarities,
+        mapply(string_sim, names(aligned_strings), aligned_strings)
+      )
+      return(aligned_similarities)
+    } else {
+      return(c())
+    }
+  } else {
+    return(c())
+  }
+}
+```
+
+```{r}
+# for each pair of nodes,
+get_graph_sim_index = function(A, B) {
+  
+  # get graph similarity
+  
+  ### get a greedy alignment similarities for A and B's neighbors
+  similarities = c()
+  
+  #### align A to B & get similarity
+  direct_similarity = string_sim(node_name(A), node_name(B))
+  similarities = c(similarities, direct_similarity)
+  
+  #### collect neighbors
+  ##### collect A and B's causes
+  a_causes = sapply(which(cause_adj[A,]==1), node_name)
+  b_causes = sapply(which(cause_adj[B,]==1), node_name)
+  # shared_causes = intersect(a_causes, b_causes)
+  # a_causes = setdiff(a_causes, shared_causes)
+  # b_causes = setdiff(b_causes, shared_causes)
+  ##### collect A and B's results
+  a_results = sapply(which(cause_adj[,A]==1), node_name)
+  b_results = sapply(which(cause_adj[,B]==1), node_name)
+  # shared_results = intersect(a_results, b_results)
+  # a_results = setdiff(a_results, shared_nodes)
+  # b_results = setdiff(b_results, shared_nodes)
+  ##### collect A and B's negations
+  a_neg = sapply(which(neg_adj[,A]==1), node_name)
+  b_neg = sapply(which(neg_adj[,B]==1), node_name)
+  # shared_negations = intersect(a_neg, b_neg)
+  # a_neg = setdiff(a_neg, shared_negations)
+  # b_neg = setdiff(b_neg, shared_negations)
+  
+  # #### align any shared node with itself, similarity=1
+  # shared_nodes = c(shared_causes, shared_results, shared_negations)
+  # similarities = c(similarities, rep(1, length(shared_nodes)))
+  
+  cause_sims = c(similarities, get_aligned_similarities(a_causes, b_causes))
+  results_sims = c(similarities, get_aligned_similarities(a_results, b_results))
+  neg_sims = c(similarities, get_aligned_similarities(a_neg, b_neg))
+  similarities = c(similarities, cause_sims, results_sims, neg_sims)
+  total_number_of_edges = length(c(a_causes, b_causes, a_results, b_results, a_neg, b_neg))
+  # return(sum(similarities))
+  # return(sum(similarities)/total_number_of_edges)
+  # if (length(similarities) == 1) {
+  #   similarities[1]
+  # } else {
+  # return(mean(similarities[1], mean(similarities[2:length(similarities)])))
+  # }
+  return(mean(similarities))
+  # return(mean(similarities) + 0.7*mean(neg_sims) + 0.5*mean(cause_sims) + 0.5*mean(results_sims))
+}
+```
+
+```{r}
+get_graph_sim = function(Astring, Bstring) {
+  A = find_node(Astring)
+  B = find_node(Bstring)
+  return(get_graph_sim_index(A, B))
+}
+```
+
+```{r}
+get_graph_sim("diabetes", "lung cancer")
+string_sim("diabetes", "lung cancer")
+```
+
+
+```{r}
+# Astring = "he is ill"
+# Bstring = "she is sick"
+# get_graph_sim(Astring, Bstring)
+# M[Astring, Bstring]
+# M["diabetes", "lung cancer"]
+# get_graph_sim("diabetes", "lung cancer")
+# 
+# As = names(V(g)[1:20])
+# Bs = names(V(g)[1:20])
+# 
+# miniM = M[As, Bs]
+# miniM_graph = matrix(0, nrow = length(As), ncol=length(Bs), dimnames = list(As, Bs))
+# 
+# minidf_sim = expand.grid(A=As, B=Bs, stringsAsFactors=F) %>%
+#   mutate(graph_sim = mapply(function(A, B) {
+#     s = get_graph_sim(A, B)
+#     miniM_graph[A, B] <<- s
+#     return(s)
+#   }, A, B)) %>%
+#   mutate(strsim = mapply(string_sim, A, B)) %>%
+#   mutate(ident = strsim==graph_sim)
+# 
+# heatmap(M)
+# 
+# # minidf_sim_filtered = minidf_sim %>% filter(!ident)
+# # diffAs = unique(minidf_sim_filtered$A)
+# # diffBs = unique(minidf_sim_filtered$B)
+# # diffM = miniM[diffAs, diffBs]
+# # diffM_graph = miniM_graph[diffAs, diffBs]
+# # 
+# # # diffM = matrix(0, nrow = length(minidf_sim_filtered$A), ncol=length(minidf_sim_filtered$B),
+# # #                dimnames = list(minidf_sim_filtered$A, minidf_sim_filtered$B))
+# # # ignore = minidf_sim_filtered %>%
+# # #   mutate(ignore = mapply(function(A, B) {
+# # #     diffM[A, B]
+# # #   }, A, B))
+# # 
+# # # hclust(dist(-miniM_graph)) %>% plot(., cex = 0.5)
+# # heatmap(diffM_graph)
+# # heatmap(diffM)
+# # 
+# # # ggplot(NULL, aes(x=c(diffM), y=c(diffM_graph))) +
+# # #   geom_point()
+# 
+
+```
+
+
+
+
+
+
