@@ -16,6 +16,7 @@ library(ggplot2)
 library(igraph)
 library(ggthemes)
 library(tidyverse)
+library(ggrepel)
 char = as.character
 num = function(x) {return(as.numeric(as.character(x)))}
 library('Matrix')
@@ -171,6 +172,102 @@ get_graph_sim = function(Astring, Bstring) {
 get_graph_sim("diabetes", "lung cancer")
 string_sim("diabetes", "lung cancer")
 ```
+
+```{r}
+As = names(V(g)[1:30])
+Bs = names(V(g)[1:30])
+blank_mtx = matrix(NA, nrow = length(As), ncol = length(Bs), dimnames = list(As, Bs))
+graphM = blank_mtx
+stringM = blank_mtx
+ignore = sapply(As, function(a) {
+  sapply(Bs, function(b) {
+    graphM[a,b] <<- get_graph_sim(a, b)
+    stringM[a,b] <<- string_sim(a, b)
+    return(1)
+  })
+  return(1)
+})
+graphD = 1 - graphM
+stringD = 1 - stringM
+```
+
+```{r}
+string_dist = dist(stringD)
+graph_dist = dist(graphD)
+string_fit = cmdscale(string_dist,eig=TRUE, k=2)$points %>%
+  as.data.frame %>% add_rownames %>% mutate(sim_measure = "string")
+graph_fit = cmdscale(graph_dist,eig=TRUE, k=2)$points %>%
+  as.data.frame %>% add_rownames %>% mutate(sim_measure = "graph")
+```
+
+```{r}
+# align the two mds fits so that the first node is at 0
+# for both and the second node is at (1, 1)
+# (just arbitrarily)
+string_fit = string_fit %>% mutate(
+  # first point to (0,0)
+  unaligned_x = V1,
+  V1_offset = V1 - V1[1],
+  unaligned_y = V2,
+  V2_offset = V2 - V2[1],
+  # rotate so p1 -> p2 is on x axis
+  theta = - atan(V2_offset[2] / V1_offset[2]),
+  V1_rotated = cos(theta)*V1_offset - sin(theta)*V2_offset,
+  V2_rotated = sin(theta)*V1_offset + cos(theta)*V2_offset,
+  magnitude = sqrt(V1_rotated[2]^2 + V2_rotated[2]^2),
+  V1 = V1_rotated/magnitude,
+  V2 = V2_rotated/magnitude
+)
+graph_fit = graph_fit  %>% mutate(
+  # first point to (0,0)
+  unaligned_x = V1,
+  V1_offset = V1 - V1[1],
+  unaligned_y = V2,
+  V2_offset = V2 - V2[1],
+  # rotate so p1 -> p2 is on x axis
+  theta = - atan(V2_offset[2] / V1_offset[2]),
+  V1_rotated = cos(theta)*V1_offset - sin(theta)*V2_offset,
+  V2_rotated = sin(theta)*V1_offset + cos(theta)*V2_offset,
+  magnitude = sqrt(V1_rotated[2]^2 + V2_rotated[2]^2),
+  V1 = V1_rotated/magnitude,
+  V2 = V2_rotated/magnitude
+)
+```
+
+```{r}
+mds_df_long = rbind(string_fit, graph_fit) %>% rename(node = rowname) %>%
+  mutate(cancer_label = ifelse(grepl("cancer", node), node, NA)) %>%
+  mutate(ill_label = ifelse(grepl("ill", node), node, NA))
+mds_df_wide = cbind(string_fit %>% rename(string_x = V1, string_y = V2, node=rowname),
+                    graph_fit %>% select(V1, V2) %>% rename(graph_x = V1, graph_y = V2)) %>%
+  mutate(cancer_label = ifelse(grepl("cancer", node), node, NA)) %>%
+  mutate(ill_label = ifelse(grepl("ill", node) | grepl("sick", node), node, NA))
+ggplot() +
+  geom_segment(data=mds_df_wide %>%
+                 filter(!is.na(cancer_label)),
+               aes(x=string_x, xend=graph_x,
+                        y=string_y, yend=graph_y),
+               # arrow=arrow(length = unit(0.02, "npc"))
+               ) +
+  geom_text_repel(data=mds_df_wide %>%
+                 filter(!is.na(cancer_label)), aes(x=graph_x, y=graph_y, label=cancer_label), size=3) +
+  geom_point(data=mds_df_long %>%
+                 filter(!is.na(cancer_label)), aes(x=V1, y=V2, colour=sim_measure))
+```
+```{r}
+As
+```
+
+
+```{r}
+# # plot solution 
+# x <- fit$points[,1]
+# y <- fit$points[,2]
+# plot(x, y, xlab="Coordinate 1", ylab="Coordinate 2", 
+#   main="Metric	MDS",	type="n")
+# text(x, y, labels = row.names(mydata), cex=.7)
+```
+
 
 
 ```{r}
