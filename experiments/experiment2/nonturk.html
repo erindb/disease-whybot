@@ -1,0 +1,83 @@
+<html>
+
+  <head>
+    <title>Cognition study</title>
+
+    <!--JS-->
+
+    <!-- external general utilities -->
+    <script src="../_shared/js/jquery-1.11.1.min.js "></script>
+    <script src="../_shared/js/underscore-min.js "></script>
+    <script src="../_shared/js/bootstrap.min.js"></script>
+
+    <!-- bootstrap: Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="../_shared/css/bootstrap.min.css">
+
+    <!-- bootstrap: Optional theme -->
+    <link rel="stylesheet" href="../_shared/css/bootstrap-theme.min.css">
+
+    <style>
+      body {
+        text-align: center;
+      }
+      iframe {
+        width: 810px;
+        height: 608px;
+        margin: auto auto;
+      }
+      .err {
+        color: red;
+      }
+      .login {
+        width: 810px;
+        height: 608px;
+        margin-top: 100px;
+      }
+      .login > button {
+        display: block;
+        margin: auto auto;
+      }
+      .login > p {
+        width: 500px;
+        margin: 0 auto 5 auto;
+      }
+      textarea {
+        margin: 20 auto 0 auto;
+      }
+    </style>
+
+  </head>
+
+  <body>
+
+    <div class="login">
+      <p>Please use the same username each time you take this experiment. Thanks!</p>
+      <p><label>username:</label> <input type="text" id="username"></p>
+      <p class="err">Please enter some username.</p>
+      <button>Login</button>
+    </div>
+
+    <iframe id="experiment"></iframe>
+
+    <script>
+      $(document).ready(function() {
+        $(".err").hide();
+        $("#experiment").hide();
+        $(".login button").click(function() {
+          // POST to php script that communicates with a database
+          // let me know if A) this is the first password used for
+          // this username
+          var username = $("#username").val();
+          if (username.length > 0) {
+              $(".login").hide();
+              $("#experiment").show();
+              $("#experiment").attr('src', "experiment0.html?assignmentId=" + username);
+          } else {
+              $(".err").show();
+          }
+        });
+      });
+    </script>
+
+  </body>
+</html>
