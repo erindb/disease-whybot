@@ -38,6 +38,7 @@ sentences <- read.delim("../../data/experiment1/sentences_to_go_with_cosine_simi
 )$V1
 
 X = read.table("../../data/experiment1/dissent_cosine_similarities.txt")
+# X = read.table("../../data/experiment1/skip-thoughts_cosine_similarities.txt")
 
 V = do.call(c, as.list(X))
 M = matrix(V, nrow = nrow(X), dimnames = list(sentences, sentences))
@@ -113,8 +114,8 @@ get_similar <- function(index, n=20) {
 ## ----------------------------------------
 # grab small set of sentences for testing
 
-sentences <- sentences[c(1,4, 7, 8, 11, 20, 21, 23, 22,50)]
-M <- M[c(1,4, 7, 8, 11, 20, 21, 23, 22,50),c(1,4, 7, 8, 11, 20, 21, 23, 22,50)]
+# sentences <- sentences[c(1,4, 7,228, 11, 20, 21, 23, 22,50)]
+# M <- M[c(1,4, 7, 8, 11, 20, 21, 23, 22,50),c(1,4, 7, 8, 11, 20, 21, 23, 22,50)]
 
 if ("sentence_merging_data.csv" %in% list.files()) {
 
@@ -130,12 +131,21 @@ if ("sentence_merging_data.csv" %in% list.files()) {
 response <- -1
 iter_num <- 0
 
+## drag the slider on what gets collapsed
+## causes and cures out of the graph
+## reading things from the graph structure per se
+
 for (i in 1:length(sentences)) {
   
-  if (response == 3) break
+  if (response == 4) break
   
   orig_sentence <- sentences[i]
-  similar_sentences <- names(get_similar(i, 9)[2:9])
+  
+  df_output <<- bind_rows(df_output, data.frame(sentence1=orig_sentence,
+                                                sentence2=orig_sentence,
+                                                synonym=1))
+  
+  similar_sentences <- names(get_similar(i, 9))[2:50] #todo: more like 50
   similar_sentences <- similar_sentences[which(!is.na(similar_sentences)) ]
   unmerged_tally <- 0
   existing_entries <- data.frame()
@@ -151,7 +161,7 @@ for (i in 1:length(sentences)) {
   for (candidate in similar_sentences) {
     
 
-    if (orig_sentence %in% c("diabetes", "lung cancer", "the flu", "")) {break} # <--- ADD 4th SEED
+    # if (orig_sentence %in% c("diabetes", "lung cancer", "the flu", "")) {break} # <--- ADD 4th SEED
     
     existing_entries <- df_output %>% filter((sentence1 == orig_sentence & sentence2 == candidate) ||
                                                (sentence2 == orig_sentence & sentence1 == candidate))
@@ -160,27 +170,30 @@ for (i in 1:length(sentences)) {
 
     if (nrow(existing_entries) > 0) break
 
-    if (orig_sentence %in% c("diabetes", "lung cancer", "the flu", "")) break # <--- ADD 4th SEED
+    # if (orig_sentence %in% c("diabetes", "lung cancer", "the flu", "")) break # <--- ADD 4th SEED
     
     if (!is.null(df_output)) {
       # maybe add showing sentence number and iteration number?
-      existing_entries <- df_output %>% filter(sentence1 == orig_sentence, sentence2 == candidate)
+      existing_entries <- df_output %>%
+        filter( (sentence1 == orig_sentence & sentence2 == candidate) |
+                  (sentence2 == orig_sentence & sentence1 == candidate) )
       
       if (nrow(existing_entries) > 0) break
     }
     
     cat("\014") # clear console
+    cat(paste0("i: ", i, "/", length(sentences), "\n\n"))
     cat(paste0("Response 1: ", orig_sentence,"\n","Response 2: ", candidate,"\n\n"))
     
-    response <- utils::menu(c("merge","keep separate","quit"), title = "Should responses be merged?")
+    response <- utils::menu(c("merge","keep separate","borderline","quit"), title = "Should responses be merged?")
     
     ## --- check response
-    if (response == 3) break
+    if (response == 4) break
     
-    if (response == 2) {
+    if (response == 2 | response==3) {
       unmerged_tally <- unmerged_tally + 1
       
-      if (unmerged_tally > 4) {
+      if (unmerged_tally > 5) {
         break
       }
     }
@@ -193,23 +206,53 @@ for (i in 1:length(sentences)) {
     # record symmetrically
     iter_df <- data.frame(sentence1 = c(orig_sentence, candidate),
                           sentence2 = c(candidate, orig_sentence),
-                          synonym = rep(ifelse(response == 1, 1, 0),2))
+                          synonym = rep(ifelse(response == 1, 1,
+                                               ifelse(response==3, 0.5, 0))))
     
     # iter_df <- data.frame(sentence1 = orig_sentence, 
     #                       sentence2 = candidate, 
     #                       synonym = ifelse(response == 1, 1, 0))
     
-    # # new approach
-    other_synonyms <- df_output %>%
-      filter(sentence1 == candidate) %>%
-      # filter(synonym == 1) %>%
-      mutate(sentence1 = orig_sentence) %>%
-      bind_rows(
-        df_output %>%
-          filter(sentence2 == candidate) %>%
-          # filter(synonym == 1) %>%
-          mutate(sentence2 = orig_sentence)
-      ) %>% distinct() # not sure why I need this?
+    if (response==1) {
+      # # new approach
+      other_synonyms <- df_output %>%
+        filter(sentence1 == candidate) %>%
+        # filter(synonym == 1) %>%
+        mutate(sentence1 = orig_sentence) %>%
+        bind_rows(
+          df_output %>%
+            filter(sentence2 == candidate) %>%
+            # filter(synonym == 1) %>%
+            mutate(sentence2 = orig_sentence)
+        ) %>%
+        bind_rows(
+          df_output %>%
+            filter(sentence1 == orig_sentence) %>%
+            # filter(synonym == 1) %>%
+            mutate(sentence1 = candidate)
+        ) %>%
+        bind_rows(
+          df_output %>%
+            filter(sentence2 == orig_sentence) %>%
+            # filter(synonym == 1) %>%
+            mutate(sentence2 = candidate)
+        ) %>% distinct() # not sure why I need this?
+    } else {
+      other_synonyms <- df_output %>%
+        filter(F)
+    }
+    
+    # # # new approach
+    # other_synonyms <- df_output %>%
+    #   filter(sentence1 == candidate) %>%
+    #   # filter(synonym == 1) %>%
+    #   mutate(sentence1 = orig_sentence) %>%
+    #   bind_rows(
+    #     df_output %>%
+    #       filter(sentence2 == candidate) %>%
+    #       # filter(synonym == 1) %>%
+    #       mutate(sentence2 = orig_sentence)
+    #   ) %>% distinct() # not sure why I need this?
     
     iter_df <- bind_rows(iter_df, other_synonyms)
 
@@ -225,3 +268,28 @@ for (i in 1:length(sentences)) {
 }
 
 write.csv(df_output, "sentence_merging_data.csv", row.names = FALSE)
+
+
+n_sentences = length(colnames(M))
+gold_M = matrix(0, n_sentences, n_sentences, dimnames = list(colnames(M), colnames(M)))
+for (i in 1:nrow(df_output)) {
+  s1 = df_output$sentence1[i]
+  s2 = df_output$sentence2[i]
+  gold_M[s1, s2] = df_output$synonym[i]
+}
+gold_M
+
+
+
+
+## comparing 1-0 gold merge matrix to sentence embedding similarities:
+##   (a) correlate gold with sentence similarity between those two nodes
+##   (b) correlate gold with 1-0 derived matrix OR get precision & recall for classifying each pair
+##           - use a threshold on similarity to merge two nodes --> terrible
+##           - use a clustering algorithm, cutting off at some point --> terrible
+##           - mayyybe if we do some heuristic thing with mutual high ranking
+##                * if B is highly ranked in A's similarity row AND
+##                * A is highly ranked in B's similarity row
+##                * could implement by averaging ranking per pair to get new similarity measure
+##
+## this motivates using the graph structure   

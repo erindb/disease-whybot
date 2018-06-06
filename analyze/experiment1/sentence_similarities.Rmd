@@ -26,35 +26,70 @@ library('Matrix')
 sentences = read.delim("../../data/experiment1/sentences_to_go_with_cosine_similarities.txt", sep="~", stringsAsFactors = F, header=F)$V1
 dissent_X = read.table("../../data/experiment1/dissent_cosine_similarities.txt")
 skipthoughts_X = read.table("../../data/experiment1/skip-thoughts_cosine_similarities.txt")
+# dissent_embeddings = read.table("../../data/experiment1/dissent_embeddings_mtx.txt.IGNORE")
+```
+
+
+```{r}
 # X = skipthoughts_X
 X = dissent_X
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r}
 V = do.call(c, as.list(X))
 M = matrix(V, nrow = nrow(X), dimnames = list(sentences, sentences))
 ```
 
+
+```{r}
+# # looking at highest magnitude cosine distance is basically useless
+# threshold = 0.1
+# ignore_sents = c("{{}}", "Above", "Nothing")
+# closest_pairs_indices = which(M<threshold, arr.ind = T)
+# closest_pairs = sapply(1:nrow(closest_pairs_indices), function(i) {
+#   sents = sentences[closest_pairs_indices[i,]]
+#   if (!(sents[1] %in% ignore_sents | sents[2] %in% ignore_sents)) {
+#     return(paste(sents, collapse=" ~ "))
+#   } else {
+#     return("")
+#   }})
+# closest_pairs[closest_pairs!=""]
+```
+
+
 ```{r}
 D = as.dist(1 - M)
 ```
+
 
 ```{r}
 H = hclust(D)
 ```
 
 ```{r}
-lowest_merges <- H$merge[1:100,] %>% 
+# lowest_merges <- H$merge[1:100,] %>% 
+lowest_merges <- H$merge %>%
   as_tibble() %>%
   filter(V1 < 0, V2 < 0)
 
-similar_sentences1 <- sentences[-lowest_merges$V1]
-similar_sentences2 <- sentences[-lowest_merges$V2]
-paste(similar_sentences1, " - ", similar_sentences2)
-
 interesting_sentences <- c(89, 90, 97, 158, 155, 171, 177, 186, 235, 249)
 
-i <- 89
+i <- 249
 Row <- M[i,]
 # sentences[][1:25]
 
@@ -62,7 +97,13 @@ sort(Row, decreasing=TRUE)[1:10]
 ```
 
 ```{r}
+similar_sentences1 <- sentences[-lowest_merges$V1]
+similar_sentences2 <- sentences[-lowest_merges$V2]
+paste(similar_sentences1, " - ", similar_sentences2)
+```
 
+
+```{r}
 get_similar <- function(index, n=20, filter_negation=T) {
   ## gets 20 most similar sentences (w/ similarity)
   ## while accounting for negation
@@ -109,7 +150,7 @@ get_similar <- function(index, n=20, filter_negation=T) {
 ```{r}
 # 187 was a problem (e.g.)
 
-get_similar(189, filter_negation=F)
+get_similar(187, filter_negation=F)
 ```
 
   
@@ -281,3 +322,63 @@ a %*% a
 mapping = 1:719
 merged_graph = contract(g, mapping, vertex.attr.comb = igraph_opt("vertex.attr.comb"))
 ```
+
+```{r}
+# propose a merge using lowest_merges
+# if self-negations, reject
+# get graph distance
+current_graph = g
+clusters = list()
+for (i in 1:500) {
+  potential_merge = -lowest_merges[i,]
+  clust_index1 = potential_merge[[1]]
+  clust_index2 = potential_merge[[2]]
+  if (clust_index1 > 0 & clust_index2 > 0) {
+    s1 = sentences[potential_merge[[1]]]
+    s2 = sentences[potential_merge[[2]]]
+    if (s1 %in% sentences[V(current_graph)] & s2 %in% sentences[V(current_graph)]) {
+      current_s1_index = which(sentences[V(current_graph)]==s1)
+      current_s2_index = which(sentences[V(current_graph)]==s2)
+      mapping = 1:length(V(current_graph))
+      mapping[current_s2_index:length(mapping)] = mapping[current_s2_index:length(mapping)] - 1
+      mapping[current_s2_index] = current_s1_index
+      merged_graph = contract(current_graph, mapping, vertex.attr.comb = igraph_opt("vertex.attr.comb"))
+      self_negations = get_self_negations(merged_graph)
+      if (sum(self_negations)==0) {
+        # if (s1 %in% names(clusters)) {
+        #   clusters[[s1]] = c(clusters[[s1]], s2)
+        # } else {
+        #   clusters[[s1]] = c(s2)
+        # }
+        current_graph <<- merged_graph
+      } else {
+        print(V(merged_graph)[self_negations>0])
+      }
+    }
+  }
+}
+  
+#   if (potential_merge[[2]]>0 & potential_merge[[1]]>0) {
+#     mapping = 1:length(V(current_graph))
+#     s1 = sentences[potential_merge[[1]]]
+#     s2 = sentences[potential_merge[[2]]]
+#     if (s1 %in% sentences[V(current_graph)] & s2 %in% sentences[V(current_graph)]) {
+#       mapping[which(sentences[V(current_graph)]==s2)] = which(sentences[V(current_graph)]==s1)
+#       merged_graph = contract(current_graph, mapping, vertex.attr.comb = igraph_opt("vertex.attr.comb"))
+#       self_negations = get_self_negations(merged_graph)
+#       if (sum(self_negations)==0) {
+#         if (s1 %in% names(clusters)) {
+#           clusters[[s1]] = c(clusters[[s1]], s2)
+#         } else {
+#           clusters[[s1]] = c(s2)
+#         }
+#         current_graph <<- merged_graph
+#       } else {
+#         print(V(merged_graph)[self_negations>0])
+#       }
+#     }
+#   } else {
+#   }
+# }
+```
+
